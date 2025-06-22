@@ -29,7 +29,10 @@ SMTP_PORT = 465 # Cổng SMTP cho Gmail (sử dụng SSL)
 # Danh sách mã cổ phiếu cần theo dõi
 # Bạn có thể thay đổi, thêm hoặc bớt các mã cổ phiếu trong danh sách dưới đây.
 tickers = [
-    "HUT", "FLC"
+    # Danh sách VN30 cập nhật
+    "ACB", "BCM", "BID", "BVH", "CTG", "FPT", "GAS", "GVR", "HDB", "HPG",
+    "MBB", "MSN", "MWG", "PLX", "POW", "SAB", "SHB", "SSB", "SSI", "STB",
+    "TCB", "TPB", "VCB", "VHM", "VIB", "VIC", "VJC", "VNM", "VPB", "VRE", "VGT"
 ]
 
 # Các URL cần crawl
@@ -44,22 +47,43 @@ urls_to_crawl = [
 ]
 
 
-def check_stock_in_soup(soup, tickers):
+def check_stock_in_soup(soup, tickers, site_name):
     """Kiểm tra mã cổ phiếu trong nội dung từ đối tượng BeautifulSoup."""
-    content_selectors = [
-        ".detail-content", ".detail-content-body", ".news-content",
-        "article", ".content-detail", "#mainContent"
-    ]
-    for selector in content_selectors:
+    
+    # Cải tiến: Sử dụng selectors riêng cho từng trang
+    content_selectors = {
+        "cafef": [
+            ".detail-content", ".detail-content-body", ".news-content",
+            "article", ".content-detail", "#mainContent"
+        ],
+        "vietnambiz": [
+            ".article-content", "article.content", ".content-detail", 
+            "#mainContent", ".journal-content-article",
+            "body" # Phương án cuối cùng: quét toàn bộ trang
+        ]
+    }
+    
+    selectors_to_use = content_selectors.get(site_name)
+    # Nếu site_name không hợp lệ, trả về None để tránh lỗi
+    if not selectors_to_use:
+        return None
+
+    for selector in selectors_to_use:
         content_element = soup.select_one(selector)
         if content_element:
             content = content_element.get_text().upper()
             for ticker in tickers:
                 ticker_upper = ticker.upper()
+                # Cải tiến: Thêm pattern cho "(Mã: ABC)"
                 patterns = [
-                    f"\\({ticker_upper}\\)", f"\\[{ticker_upper}\\]",
-                    f":\\s*{ticker_upper}\\b", f":{ticker_upper}\\b",
-                    f"MÃ:\\s*{ticker_upper}\\b", f"MÃ\\s+{ticker_upper}\\b",
+                    f"\\(Mã:\\s*{ticker_upper}\\)", # Dạng (Mã: HUT)
+                    f"\\({ticker_upper}\\)",       # Dạng (HUT)
+                    f"\\[{ticker_upper}\\]",       # Dạng [HUT]
+                    f"\\s{ticker_upper}\\s",        # Dạng " HUT " (có khoảng trắng bao quanh)
+                    f":\\s*{ticker_upper}\\b",
+                    f":{ticker_upper}\\b",
+                    f"MÃ:\\s*{ticker_upper}\\b",
+                    f"MÃ\\s+{ticker_upper}\\b",
                 ]
                 for pattern in patterns:
                     if re.search(pattern, content):
@@ -68,38 +92,62 @@ def check_stock_in_soup(soup, tickers):
 
 def parse_date_from_soup(soup):
     """Lấy ngày đăng bài từ đối tượng BeautifulSoup."""
+
+    # Chiến lược 1 (Mới): Lấy từ meta tags (đáng tin cậy nhất)
+    meta_selectors = [
+        "meta[property='article:published_time']",
+        "meta[name='pubdate']"
+    ]
+    for selector in meta_selectors:
+        meta_tag = soup.select_one(selector)
+        if meta_tag and meta_tag.get('content'):
+            date_iso_str = meta_tag.get('content')
+            try:
+                # fromisoformat handles formats like '2025-06-20T23:20:00'
+                return datetime.fromisoformat(date_iso_str)
+            except ValueError:
+                # Fallback for just date part or other variations
+                try:
+                    return datetime.strptime(date_iso_str.split('T')[0], "%Y-%m-%d")
+                except ValueError:
+                    continue # Try next selector
+
+    # Chiến lược 2: Thử các selector CSS cụ thể trong body
     date_selectors = [
         "span.pdate", "span.date", ".post-time", ".time", ".datepost",
         "span[class*='time']", "span[class*='date']", ".article-time",
         ".news-time",
         "span.datetime" # Thêm selector cho Vietnambiz
     ]
+    
+    date_text = None
     for selector in date_selectors:
         date_element = soup.select_one(selector)
         if date_element:
             date_text = date_element.get_text()
-            date_patterns = [
-                r"(\d{2}-\d{2}-\d{4})", r"(\d{2}/\d{2}/\d{4})",
-                r"(\d{2}-\d{2}-\d{4} - \d{2}:\d{2} [AP]M)",
-                r"(\d{1,2}/\d{1,2}/\d{4})", r"(\d{1,2}-\d{1,2}/\d{4})"
-            ]
-            for pattern in date_patterns:
-                match = re.search(pattern, date_text)
-                if match:
-                    date_str = match.group(1)
-                    try:
-                        if "-" in date_str:
-                            return datetime.strptime(date_str, "%d-%m-%Y")
-                        else:
-                            return datetime.strptime(date_str, "%d/%m/%Y")
-                    except ValueError:
-                        try:
-                            if "-" in date_str:
-                                return datetime.strptime(date_str, "%-d-%-m-%Y")
-                            else:
-                                return datetime.strptime(date_str, "%-d/%-m/%Y")
-                        except ValueError:
-                            continue
+            break
+    
+    # Chiến lược 3: Nếu không thành công, tìm kiếm văn bản theo mẫu (cho vietnambiz)
+    if not date_text:
+        # Mẫu này đặc trưng cho định dạng "HH:MM | DD/MM/YYYY" của Vietnambiz
+        found_text_node = soup.find(text=re.compile(r'\d{1,2}:\d{2}\s*\|\s*\d{1,2}/\d{1,2}/\d{4}'))
+        if found_text_node:
+            date_text = found_text_node.strip()
+
+    if date_text:
+        # Cải tiến: Gộp các pattern và tìm kiếm một lần.
+        # Pattern này sẽ tìm dd-mm-yyyy, dd/mm/yyyy, d-m-yyyy, d/m/yyyy.
+        match = re.search(r'(\d{1,2}/\d{1,2}/\d{4})|(\d{1,2}-\d{1,2}-\d{4})', date_text)
+        if match:
+            # Lấy group không rỗng đầu tiên
+            date_str = next(g for g in match.groups() if g is not None)
+            # Cải tiến: Thử các định dạng một cách an toàn và đa nền tảng
+            # %d, %m, %Y xử lý được cả số có 1 và 2 chữ số.
+            for fmt in ("%d/%m/%Y", "%d-%m-%Y"):
+                try:
+                    return datetime.strptime(date_str, fmt)
+                except ValueError:
+                    pass # Thử định dạng tiếp theo
     return None
 
 def get_page_urls(url, page=1):
@@ -112,9 +160,9 @@ def get_page_urls(url, page=1):
     # Thay thế phần đuôi .chn bằng /trang-{page}.chn cho Cafef
     return url.replace(".chn", f"/trang-{page}.chn")
 
-async def fetch_cafef(target_date_str=None):
+async def fetch_news(target_date_str=None):
     """
-    Tìm nạp tin tức từ Cafef cho một ngày cụ thể bằng httpx để có hiệu năng cao.
+    Tìm nạp tin tức từ Cafef và Vietnambiz cho một ngày cụ thể.
     """
     if target_date_str:
         try:
@@ -139,16 +187,23 @@ async def fetch_cafef(target_date_str=None):
         "article h3 a", ".visit-popup", ".title a",
         ".story__heading a", ".news-item a", ".list-news a"
     ])
-    article_selectors_vietnambiz = ", ".join(["h3.title-list-news a"])
+    # Cải tiến: Mở rộng bộ selectors cho Vietnambiz dựa trên phản hồi của người dùng
+    article_selectors_vietnambiz = ", ".join([
+        "h3.title-news a",      # Selector được gợi ý
+        "a.title",              # Selector được gợi ý
+        "h3.title-list-news a"  # Selector cũ, giữ lại để phòng trường hợp
+    ])
 
 
     async with httpx.AsyncClient(headers=headers, timeout=20.0, follow_redirects=True) as client:
         for base_url in urls_to_crawl:
             
+            site_name = "cafef" # Mặc định
             # Chọn bộ selector và URL gốc phù hợp với trang web
             if "vietnambiz.vn" in base_url:
                 article_selector_str = article_selectors_vietnambiz
                 site_base_url = "https://vietnambiz.vn"
+                site_name = "vietnambiz"
             else: # Mặc định là cafef.vn
                 article_selector_str = article_selectors_cafef
                 site_base_url = "https://cafef.vn"
@@ -176,11 +231,17 @@ async def fetch_cafef(target_date_str=None):
                         if not title or not article_url:
                             continue
 
-                        if article_url.startswith('/'):
-                            article_url = site_base_url + article_url
-                        elif not article_url.startswith('http'):
+                        # LỌC TIÊU ĐỀ: Bỏ qua nếu tiêu đề ngắn hơn 15 ký tự
+                        if len(title.strip()) < 15:
                             continue
 
+                        # SỬA LỖI: Xử lý linh hoạt các miền của vietnambiz
+                        if not article_url.startswith('http'):
+                            if "vietnambiz.vn" in article_url:
+                                article_url = "https:" + article_url if article_url.startswith('//') else "https://" + article_url.lstrip('/')
+                            else:
+                                article_url = site_base_url + article_url
+                        
                         if article_url in processed_urls:
                             continue
                         processed_urls.add(article_url)
@@ -198,7 +259,7 @@ async def fetch_cafef(target_date_str=None):
                         if not date_posted or date_posted.date() != target_date:
                             continue
 
-                        ticker = check_stock_in_soup(article_soup, tickers)
+                        ticker = check_stock_in_soup(article_soup, tickers, site_name)
                         if ticker:
                             data.append({
                                 "Mã cổ phiếu": ticker,
@@ -303,8 +364,8 @@ async def news_command_handler(update: Update, context):
     await update.message.reply_text(f"🔍 Đang tìm nạp tin tức cho ngày {display_date_str}, vui lòng chờ...")
 
     try:
-        # Truyền chuỗi ngày mục tiêu vào hàm fetch_cafef
-        news_data = await fetch_cafef(target_date_str)
+        # Truyền chuỗi ngày mục tiêu vào hàm fetch_news
+        news_data = await fetch_news(target_date_str)
 
         if not news_data:
             await update.message.reply_text(f"😕 Không tìm thấy tin tức nào cho ngày {display_date_str}.")
