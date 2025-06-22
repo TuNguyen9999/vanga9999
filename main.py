@@ -26,14 +26,45 @@ SMTP_PORT = 465 # Cổng SMTP cho Gmail (sử dụng SSL)
 # ====================================================
 
 # ==============================================
-# Danh sách mã cổ phiếu cần theo dõi
-# Bạn có thể thay đổi, thêm hoặc bớt các mã cổ phiếu trong danh sách dưới đây.
-tickers = [
-    # Danh sách VN30 cập nhật
-    "ACB", "BCM", "BID", "BVH", "CTG", "FPT", "GAS", "GVR", "HDB", "HPG",
-    "MBB", "MSN", "MWG", "PLX", "POW", "SAB", "SHB", "SSB", "SSI", "STB",
-    "TCB", "TPB", "VCB", "VHM", "VIB", "VIC", "VJC", "VNM", "VPB", "VRE", "VGT"
-]
+# Danh sách mã cổ phiếu và tên công ty tương ứng cần theo dõi
+# Bạn có thể thay đổi, thêm hoặc bớt các cặp mã cổ phiếu - tên công ty trong danh sách dưới đây.
+# Tên công ty có thể là tên đầy đủ, tên viết tắt, hoặc các tên thường gọi.
+TICKER_COMPANY_MAP = {
+    # ============== Cổ phiếu VN30 ==============
+    "ACB": ["NGÂN HÀNG Á CHÂU"],
+    "BCM": ["BECAMEX", "TỔNG CÔNG TY ĐẦU TƯ VÀ PHÁT TRIỂN CÔNG NGHIỆP"],
+    "BID": ["BIDV", "NGÂN HÀNG ĐẦU TƯ VÀ PHÁT TRIỂN VIỆT NAM"],
+    "BVH": ["BẢO VIỆT"],
+    "CTG": ["VIETINBANK", "NGÂN HÀNG CÔNG THƯƠNG VIỆT NAM"],
+    "FPT": ["FPT Corp", "CÔNG TY CỔ PHẦN FPT", "CTCP FPT"],
+    "GAS": ["PVGAS", "TỔNG CÔNG TY KHÍ VIỆT NAM"],
+    "GVR": ["TẬP ĐOÀN CÔNG NGHIỆP CAO SU VIỆT NAM", "CAO SU VIỆT NAM"],
+    "HDB": ["HDBANK", "NGÂN HÀNG PHÁT TRIỂN THÀNH PHỐ HỒ CHÍ MINH"],
+    "HPG": ["TẬP ĐOÀN HÒA PHÁT", "HÒA PHÁT"],
+    "MBB": ["MBBANK", "NGÂN HÀNG QUÂN ĐỘI"],
+    "MSN": ["MASAN", "TẬP ĐOÀN MASAN"],
+    "MWG": ["THẾ GIỚI DI ĐỘNG", "MOBILE WORLD"],
+    "PLX": ["PETROLIMEX", "TẬP ĐOÀN XĂNG DẦU VIỆT NAM"],
+    "POW": ["PV POWER", "TỔNG CÔNG TY ĐIỆN LỰC DẦU KHÍ VIỆT NAM"],
+    "SAB": ["SABECO", "TỔNG CÔNG TY BIA - RƯỢU - NƯỚC GIẢI KHÁT SÀI GÒN"],
+    "SHB": ["NGÂN HÀNG SÀI GÒN - HÀ NỘI"],
+    "SSB": ["SEABANK", "NGÂN HÀNG ĐÔNG NAM Á"],
+    "SSI": ["CHỨNG KHOÁN SSI", "CÔNG TY CỔ PHẦN CHỨNG KHOÁN SSI"],
+    "STB": ["SACOMBANK", "NGÂN HÀNG SÀI GÒN THƯƠNG TÍN"],
+    "TCB": ["TECHCOMBANK", "NGÂN HÀNG KỸ THƯƠNG VIỆT NAM"],
+    "TPB": ["TPBANK", "NGÂN HÀNG TIÊN PHONG"],
+    "VCB": ["VIETCOMBANK", "NGÂN HÀNG NGOẠI THƯƠNG VIỆT NAM"],
+    "VHM": ["VINHOMES", "CÔNG TY CỔ PHẦN VINHOMES"],
+    "VIB": ["NGÂN HÀNG QUỐC TẾ VIỆT NAM"],
+    "VIC": ["VINGROUP", "TẬP ĐOÀN VINGROUP"],
+    "VJC": ["VIETJET AIR", "CÔNG TY CỔ PHẦN HÀNG KHÔNG VIETJET"],
+    "VNM": ["VINAMILK", "CÔNG TY CỔ PHẦN SỮA VIỆT NAM"],
+    "VPB": ["VPBANK", "NGÂN HÀNG VIỆT NAM THỊNH VƯỢNG"],
+    "VRE": ["VINCOM RETAIL", "CÔNG TY CỔ PHẦN VINCOM RETAIL"],
+    # ============== Cổ phiếu khác ==============
+    "CEO": ["CEO GROUP", "TẬP ĐOÀN CEO"],
+    "CTD": ["COTECCONS", "CÔNG TY CỔ PHẦN XÂY DỰNG COTECCONS"]
+}
 
 # Các URL cần crawl
 urls_to_crawl = [
@@ -43,13 +74,19 @@ urls_to_crawl = [
     "https://cafef.vn/bat-dong-san.chn",  # Bất động sản
     "https://vietnambiz.vn/doanh-nghiep.htm",
     "https://vietnambiz.vn/chung-khoan.htm",
-    "https://vietnambiz.vn/tai-chinh.htm"
+    "https://vietnambiz.vn/tai-chinh.htm",
+    "https://www.tinnhanhchungkhoan.vn/doanh-nghiep/", # Thêm trang mới
+    "https://www.tinnhanhchungkhoan.vn/chung-khoan/",   # Thêm trang mới
+    "https://www.tinnhanhchungkhoan.vn/bat-dong-san/",      # Thêm trang mới
+    "https://www.tinnhanhchungkhoan.vn/tai-chinh/"      # Thêm trang mới
 ]
 
 
-def check_stock_in_soup(soup, tickers, site_name):
-    """Kiểm tra mã cổ phiếu trong nội dung từ đối tượng BeautifulSoup."""
-    
+def check_stock_and_company_in_soup(soup, ticker_company_map, site_name):
+    """
+    Kiểm tra đồng thời mã cổ phiếu và tên công ty trong nội dung bài viết.
+    Trả về mã cổ phiếu nếu tìm thấy cả hai.
+    """
     # Cải tiến: Sử dụng selectors riêng cho từng trang
     content_selectors = {
         "cafef": [
@@ -57,12 +94,20 @@ def check_stock_in_soup(soup, tickers, site_name):
             "article", ".content-detail", "#mainContent"
         ],
         "vietnambiz": [
-            ".article-content", "article.content", ".content-detail", 
+            ".article-content", "article.content", ".content-detail",
             "#mainContent", ".journal-content-article",
-            "body" # Phương án cuối cùng: quét toàn bộ trang
+            "body"  # Phương án cuối cùng: quét toàn bộ trang
+        ],
+        "tinnhanhchungkhoan": [
+            "article.story .body",
+            "article.story", 
+            ".article-body", 
+            ".article__body", 
+            "article .article-body", 
+            "#mainContent .article-body"
         ]
     }
-    
+
     selectors_to_use = content_selectors.get(site_name)
     # Nếu site_name không hợp lệ, trả về None để tránh lỗi
     if not selectors_to_use:
@@ -71,23 +116,34 @@ def check_stock_in_soup(soup, tickers, site_name):
     for selector in selectors_to_use:
         content_element = soup.select_one(selector)
         if content_element:
-            content = content_element.get_text().upper()
-            for ticker in tickers:
+            content_upper = content_element.get_text().upper()
+
+            for ticker, company_names in ticker_company_map.items():
                 ticker_upper = ticker.upper()
-                # Cải tiến: Thêm pattern cho "(Mã: ABC)"
-                patterns = [
-                    f"\\(Mã:\\s*{ticker_upper}\\)", # Dạng (Mã: HUT)
-                    f"\\({ticker_upper}\\)",       # Dạng (HUT)
-                    f"\\[{ticker_upper}\\]",       # Dạng [HUT]
-                    f"\\s{ticker_upper}\\s",        # Dạng " HUT " (có khoảng trắng bao quanh)
+
+                # 1. Kiểm tra sự xuất hiện của mã cổ phiếu (ticker)
+                ticker_found = False
+                ticker_patterns = [
+                    f"\\(Mã:\\s*{ticker_upper}\\)",  # Dạng (Mã: HUT)
+                    f"\\({ticker_upper}\\)",  # Dạng (HUT)
+                    f"\\[{ticker_upper}\\]",  # Dạng [HUT]
+                    f"\\s{ticker_upper}\\s",  # Dạng " HUT " (có khoảng trắng bao quanh)
                     f":\\s*{ticker_upper}\\b",
                     f":{ticker_upper}\\b",
                     f"MÃ:\\s*{ticker_upper}\\b",
                     f"MÃ\\s+{ticker_upper}\\b",
                 ]
-                for pattern in patterns:
-                    if re.search(pattern, content):
-                        return ticker
+                for pattern in ticker_patterns:
+                    if re.search(pattern, content_upper):
+                        ticker_found = True
+                        break
+
+                # 2. Nếu tìm thấy ticker, kiểm tra tiếp tên công ty
+                if ticker_found:
+                    for company_name in company_names:
+                        # Tìm kiếm tên công ty một cách đơn giản, không cần regex phức tạp
+                        if company_name.upper() in content_upper:
+                            return ticker  # Trả về ticker nếu tìm thấy cả hai
     return None
 
 def parse_date_from_soup(soup):
@@ -157,6 +213,9 @@ def get_page_urls(url, page=1):
     if "vietnambiz.vn" in url:
         # Ví dụ: https://vietnambiz.vn/doanh-nghiep.htm -> https://vietnambiz.vn/doanh-nghiep/trang-2.htm
         return url.replace(".htm", f"/trang-{page}.htm")
+    if "tinnhanhchungkhoan.vn" in url:
+        # Ví dụ: https://www.tinnhanhchungkhoan.vn/doanh-nghiep/ -> https://www.tinnhanhchungkhoan.vn/doanh-nghiep/trang-2.html
+        return f"{url}trang-{page}.html"
     # Thay thế phần đuôi .chn bằng /trang-{page}.chn cho Cafef
     return url.replace(".chn", f"/trang-{page}.chn")
 
@@ -193,6 +252,13 @@ async def fetch_news(target_date_str=None):
         "a.title",              # Selector được gợi ý
         "h3.title-list-news a"  # Selector cũ, giữ lại để phòng trường hợp
     ])
+    # Bộ selectors cho Tin nhanh chứng khoán
+    article_selectors_tinnhanhchungkhoan = ", ".join([
+        "h2.story__heading a",
+        "h3.story__heading a",
+        ".story--multi__heading a",
+        ".story--stream__heading a"
+    ])
 
 
     async with httpx.AsyncClient(headers=headers, timeout=20.0, follow_redirects=True) as client:
@@ -204,6 +270,10 @@ async def fetch_news(target_date_str=None):
                 article_selector_str = article_selectors_vietnambiz
                 site_base_url = "https://vietnambiz.vn"
                 site_name = "vietnambiz"
+            elif "tinnhanhchungkhoan.vn" in base_url:
+                article_selector_str = article_selectors_tinnhanhchungkhoan
+                site_base_url = "https://www.tinnhanhchungkhoan.vn"
+                site_name = "tinnhanhchungkhoan"
             else: # Mặc định là cafef.vn
                 article_selector_str = article_selectors_cafef
                 site_base_url = "https://cafef.vn"
@@ -235,6 +305,10 @@ async def fetch_news(target_date_str=None):
                         if len(title.strip()) < 15:
                             continue
 
+                        # LỌC TIÊU ĐỀ: Bỏ qua các bài viết "Cổ phiếu cần quan tâm"
+                        if "cổ phiếu cần quan tâm" in title.lower():
+                            continue
+
                         # SỬA LỖI: Xử lý linh hoạt các miền của vietnambiz
                         if not article_url.startswith('http'):
                             if "vietnambiz.vn" in article_url:
@@ -259,7 +333,7 @@ async def fetch_news(target_date_str=None):
                         if not date_posted or date_posted.date() != target_date:
                             continue
 
-                        ticker = check_stock_in_soup(article_soup, tickers, site_name)
+                        ticker = check_stock_and_company_in_soup(article_soup, TICKER_COMPANY_MAP, site_name)
                         if ticker:
                             data.append({
                                 "Mã cổ phiếu": ticker,
