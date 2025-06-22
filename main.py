@@ -4,7 +4,6 @@ from datetime import datetime, timedelta
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters
 import time
-import pandas as pd
 import re
 import asyncio
 import httpx
@@ -27,9 +26,11 @@ SMTP_PORT = 465 # Cổng SMTP cho Gmail (sử dụng SSL)
 # ====================================================
 
 # ==============================================
-# Đọc danh sách mã cổ phiếu từ file HOSE.csv
-df_stock = pd.read_csv(r"C:\Users\tu.nguyen\Downloads\Stocks.csv")
-tickers = df_stock.iloc[:, 0].dropna().unique().tolist()
+# Danh sách mã cổ phiếu cần theo dõi
+# Bạn có thể thay đổi, thêm hoặc bớt các mã cổ phiếu trong danh sách dưới đây.
+tickers = [
+    "HUT", "FLC"
+]
 
 # Các URL cần crawl
 urls_to_crawl = [
