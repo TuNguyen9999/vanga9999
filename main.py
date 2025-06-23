@@ -11,7 +11,6 @@ import smtplib
 import ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-
 # ================== CẤU HÌNH ==================
 TELEGRAM_BOT_TOKEN = "7200591128:AAFtBUbfLpp-OoI9II9hQArMTZFwelTT6_Y"
 
