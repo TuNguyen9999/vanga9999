@@ -60,9 +60,161 @@ TICKER_COMPANY_MAP = {
     "VNM": ["VINAMILK", "CÔNG TY CỔ PHẦN SỮA VIỆT NAM"],
     "VPB": ["VPBANK", "NGÂN HÀNG VIỆT NAM THỊNH VƯỢNG"],
     "VRE": ["VINCOM RETAIL", "CÔNG TY CỔ PHẦN VINCOM RETAIL"],
-    # ============== Cổ phiếu khác ==============
     "CEO": ["CEO GROUP", "TẬP ĐOÀN CEO"],
-    "CTD": ["COTECCONS", "CÔNG TY CỔ PHẦN XÂY DỰNG COTECCONS"]
+    "CTD": ["COTECCONS", "CÔNG TY CỔ PHẦN XÂY DỰNG COTECCONS"],
+    "AGG": ["AN GIA"],
+    "ANV": ["NAM VIỆT"],
+    "ASM": ["SAO MAI GROUP", "TẬP ĐOÀN SAO MAI"],
+    "BCG": ["BAMBOO CAPITAL", "BAMBOO"],
+    "BMP": ["NHỰA BÌNH MINH"],
+    "BSI": ["CHỨNG KHOÁN BIDV"],
+    "BWE": ["NƯỚC BÌNH DƯƠNG", "BIWASE"],
+    "CII": ["ĐẦU TƯ HẠ TẦNG KỸ THUẬT"],
+    "CMG": ["CMC GROUP", "TẬP ĐOÀN CMC"],
+    "CTR": ["CÔNG TRÌNH VIETTEL", "VIETTEL CONSTRUCTION", "VIETTEL"],
+    "DBC": ["DABACO"],
+    "DCM": ["ĐẠM CÀ MAU"],
+    "DGC": ["ĐỨC GIANG"],
+    "DGW": ["DIGIWORLD"],
+    "DHC": ["ĐÔNG HẢI BẾN TRE"],
+    "DIG": ["DIC CORP"],
+    "DPM": ["ĐẠM PHÚ MỸ"],
+    "DXG": ["ĐẤT XANH"],
+    "DXS": ["ĐẤT XANH"],
+    "EIB": ["EXIMBANK"],
+    "FRT": ["FRT RETAIL"],
+    "FTS": ["CHỨNG KHOÁN FPT"],
+    "GEX": ["GELEX"],
+    "GMD": ["GEMADEPT"],
+    "HCM": ["CHỨNG KHOÁN HSC"],
+    "HDC": ["PHÁT TRIỂN NHÀ BÀ RỊA VŨNG TÀU"],
+    "HDG": ["HÀ ĐÔ"],
+    "HHV": ["ĐÈO CẢ"],
+    "HSG": ["HOA SEN"],
+    "KBC": ["KINH BẮC"],
+    "KDH": ["KHANG ĐIỀN"],
+    "LPB": ["LỘC PHÁT"],
+    "MSB": ["HÀNG HẢI"],
+    "NKG": ["THÉP NAM KIM"],
+    "NLG": ["NAM LONG"],
+    "NT2": ["NHƠN TRẠCH"],
+    "NVL": ["NOVALAND"],
+    "OCB": ["PHƯƠNG ĐÔNG"],
+    "PAN": ["TẬP ĐOÀN PAN"],
+    "PC1": ["TẬP ĐOÀN PC1"],
+    "PDR": ["PHÁT ĐẠT"],
+    "PHR": ["PHƯỚC HÒA"],
+    "PNJ": ["CỔ PHIẾU PNJ"],
+    "PPC": ["NHIỆT ĐIỆN PHẢ LẠI"],
+    "PTB": ["PHÚ TÀI"],
+    "PVD": ["PV DRILLING"],
+    "PVT": ["PV TRANS"],
+    "REE": ["CƠ ĐIỆN LẠNH REE", "CỔ PHIẾU REE"],
+    "SCR": ["ĐỊA ỐC SÀI GÒN THƯƠNG TÍN", "TTC LAND"],
+    "SCS": ["DỊCH VỤ HÀNG HÓA SÀI GÒN"],
+    "SJS": ["SÔNG ĐÀ SUDICO"],
+    "SZC": ["SONADEZI CHÂU ĐỨC"],
+    "TCH": ["HOÀNG HUY"],
+    "TMS": ["TRANSIMEX"],
+    "VCG": ["VINACONEX"],
+    "VCI": ["CHỨNG KHOÁN BẢN VIỆT", "VIETCAPITAL"],
+    "VHC": ["VĨNH HOÀN"],
+    "VIX": ["CHỨNG KHOÁN VIX"],
+    "VND": ["VNDIRECT"],
+    "TLG": ["THIÊN LONG"],
+    "VTO": ["VITACO"],
+    "VIP": ["VIPCO"],
+    "MSH": ["MAY SÔNG HỒNG"],
+    "TNG": ["DỆT MAY"],
+    "DHG": ["DƯỢC HẬU GIANG"],
+    "FOX": ["VIỄN THÔNG FPT"],
+    "VGS": ["VIỆT ĐỨC"],
+    "TTN": ["TTN"],
+    "HVN": ["VIETNAM AIRLINES"],
+    "HAH": ["HẢI AN"],
+    "NTL": ["TỪ LIÊM"],
+    "KHG": ["KHẢI HOÀN"],
+    "LGL": ["LONG GIANG"],
+    "CKG": ["KIÊN GIANG"],
+    "HVH": ["HVC GROUP"],
+    "EVF": ["TÀI CHÍNH ĐIỆN LỰC"],
+    "CSV": ["HOÁ CHẤT"],
+    "IDC": ["IDICO"],
+    "NTC": ["NAM TÂN UYÊN"],
+    "LHG": ["LONG HẬU"],
+    "DTD": ["THÀNH ĐẠT"],
+    "D2D": ["CÔNG NGHIỆP SỐ 2"],
+    "DPR": ["CAO SU ĐỒNG PHÚ"],
+    "VGC": ["VIGLACERA"],
+    "SIP": ["SÀI GÒN VRG"],
+    "TRC": ["CAO SU TÂY NINH"],
+    "PVS": ["KĨ THUẬT DẦU KHÍ"],
+    "VTP": ["VIETTEL POST"],
+    "QTP": ["NHIỆT ĐIỆN QUẢNG NINH"],
+    "STK": ["SỢI THẾ KỶ"],
+    "TCM": ["THÀNH CÔNG"],
+    "GIL": ["GILIMEX, XUẤT NHẬP KHẨU BÌNH THẠNH"],
+    "VGT": ["DỆT MAY VIỆT NAM"],
+    "ADS": ["DAMSAN"],
+    "PET": ["PETROSETCO"],
+    "MCH": ["MASAN CONSUMER"],
+    "LCG": ["LIZEN"],
+    "C4G": ["CIENCO4"],
+    "HBC": ["HÒA BÌNH"],
+    "FCN": ["FECON"],
+    "PLC": ["HÓA DẦU PETROLIMEX"],
+    "HT1": ["XI MĂNG HÀ TIÊN 1"],
+    "KSB": ["KHOÁNG SẢN"],
+    "DPG": ["ĐẠT PHƯƠNG"],
+    "DHA": ["HOÁ AN"],
+    "CTI": ["CƯỜNG THUẬN IDICO"],
+    "TV2": ["TƯ VẤN XÂY DỰNG ĐIỆN 2"],
+    "DRC": ["CAO SU ĐÀ NẴNG"],
+    "DRI": ["CAO SU ĐẮK LẮK"],
+    "HAX": ["HAXACO"],
+    "VEA": ["VEAM"],
+    "CSM": ["CAO SU MIỀN NAM"],
+    "ACV": ["CẢNG HÀNG KHÔNG"],
+    "SAS": ["SASCO"],
+    "NCS": ["SUẤT ĂN HÀNG KHÔNG NỘI BÀI"],
+    "SGN": ["PHỤC VỤ MẶT ĐẤT SÀI GÒN"],
+    "NCT": ["DỊCH VỤ HÀNG HÓA NỘI BÀI"],
+    "QNS": ["ĐƯỜNG QUẢNG NGÃI"],
+    "SLS": ["MÍA ĐƯỜNG SƠN LA"],
+    "IJC": ["BECAMEX IJC"],
+    "TDC": ["BECAMEX TDC"],
+    "NAF": ["NAFOOD"],
+    "MIG": ["BẢO HIỂM QUÂN ĐỘI"],
+    "PVI": ["BẢO HIỂM PVI"],
+    "GEG": ["ĐIỆN GIA LAI"],
+    "GEE": ["GELEX"],
+    "NTP": ["NHỰA THIẾU NIÊN TIỀN PHONG"],
+    "DDV": ["DAP VINACHEM"],
+    "ACG": ["GỖ AN CƯỜNG"],
+    "VCS": ["VICOSTONE"],
+    "VLB": ["VẬT LIỆU XÂY DỰNG"],
+    "THG": ["TIỀN GIANG"],
+    "FMC": ["SAO TA"],
+    "MPC": ["MINH PHÚ"],
+    "CMX": ["CAMIMEX"],
+    "IMP": ["IMEXPHARM"],
+    "DBD": ["DƯỢC BÌNH ĐỊNH"],
+    "DVM": ["VIETMEC"],
+    "PVC": ["DẦU KHÍ"],
+    "PVB": ["BỌC ỐNG"],
+    "BSR": ["BÌNH SƠN"],
+    "OIL": ["TỔNG CÔNG TY DẦU VIỆT NAM"],
+    "BFC": ["BÌNH ĐIỀN"],
+    "LAS": ["LÂM THAO"],
+    "BAF": ["BAF VIỆT NAM"],
+    "HAG": ["HOÀNG ANH GIA LAI"],
+    "VLC": ["VILICO"],
+    "ITC": ["ĐẦU TƯ KINH DOANH NHÀ"],
+    "VFG": ["KHỬ TRÙNG"],
+    "VGI": ["VIETTEL GLOBAL"],
+    "ELC": ["ELCOM"],
+    "FOC": ["FPT ONLINE"],
+    "KSV": ["KHOÁNG SẢN VIỆT NAM"]
 }
 
 # Các URL cần crawl
@@ -144,6 +296,63 @@ def check_stock_and_company_in_soup(soup, ticker_company_map, site_name):
                         if company_name.upper() in content_upper:
                             return ticker  # Trả về ticker nếu tìm thấy cả hai
     return None
+
+# Hàm mới: Tìm tất cả mã cổ phiếu xuất hiện trong bài viết
+
+def find_all_tickers_in_soup(soup, ticker_company_map, site_name):
+    """
+    Trả về danh sách tất cả mã cổ phiếu xuất hiện trong nội dung bài viết (có cả tên công ty).
+    """
+    content_selectors = {
+        "cafef": [
+            ".detail-content", ".detail-content-body", ".news-content",
+            "article", ".content-detail", "#mainContent"
+        ],
+        "vietnambiz": [
+            ".article-content", "article.content", ".content-detail",
+            "#mainContent", ".journal-content-article",
+            "body"
+        ],
+        "tinnhanhchungkhoan": [
+            "article.story .body",
+            "article.story", 
+            ".article-body", 
+            ".article__body", 
+            "article .article-body", 
+            "#mainContent .article-body"
+        ]
+    }
+    selectors_to_use = content_selectors.get(site_name)
+    if not selectors_to_use:
+        return []
+    tickers_found = set()
+    for selector in selectors_to_use:
+        content_element = soup.select_one(selector)
+        if content_element:
+            content_upper = content_element.get_text().upper()
+            for ticker, company_names in ticker_company_map.items():
+                ticker_upper = ticker.upper()
+                ticker_patterns = [
+                    f"\\(Mã:\\s*{ticker_upper}\\)",
+                    f"\\({ticker_upper}\\)",
+                    f"\\[{ticker_upper}\\]",
+                    f"\\s{ticker_upper}\\s",
+                    f":\\s*{ticker_upper}\\b",
+                    f":{ticker_upper}\\b",
+                    f"MÃ:\\s*{ticker_upper}\\b",
+                    f"MÃ\\s+{ticker_upper}\\b",
+                ]
+                ticker_found = False
+                for pattern in ticker_patterns:
+                    if re.search(pattern, content_upper):
+                        ticker_found = True
+                        break
+                if ticker_found:
+                    for company_name in company_names:
+                        if company_name.upper() in content_upper:
+                            tickers_found.add(ticker)
+                            break
+    return list(tickers_found)
 
 def parse_date_from_soup(soup):
     """Lấy ngày đăng bài từ đối tượng BeautifulSoup."""
@@ -332,14 +541,19 @@ async def fetch_news(target_date_str=None):
                         if not date_posted or date_posted.date() != target_date:
                             continue
 
-                        ticker = check_stock_and_company_in_soup(article_soup, TICKER_COMPANY_MAP, site_name)
-                        if ticker:
-                            data.append({
-                                "Mã cổ phiếu": ticker,
-                                "Tiêu đề": title,
-                                "Đường link": article_url,
-                                "Ngày đăng": date_posted.strftime("%d/%m/%Y")
-                            })
+                        # Lấy tất cả mã cổ phiếu xuất hiện trong bài viết
+                        tickers = find_all_tickers_in_soup(article_soup, TICKER_COMPANY_MAP, site_name)
+                        if len(tickers) == 0:
+                            continue
+                        if len(tickers) > 1:
+                            continue  # Bỏ qua bài viết có hơn 2 mã cổ phiếu
+                        ticker = tickers[0]  # Lấy mã đầu tiên để hiển thị
+                        data.append({
+                            "Mã cổ phiếu": ticker,
+                            "Tiêu đề": title,
+                            "Đường link": article_url,
+                            "Ngày đăng": date_posted.strftime("%d/%m/%Y")
+                        })
                     except Exception as e:
                         print(f"Lỗi khi xử lý bài viết {article_url}: {e}")
                         continue
