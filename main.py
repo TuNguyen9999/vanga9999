@@ -30,7 +30,7 @@ SMTP_PORT = 465 # Cổng SMTP cho Gmail (sử dụng SSL)
 # Tên công ty có thể là tên đầy đủ, tên viết tắt, hoặc các tên thường gọi.
 TICKER_COMPANY_MAP = {
     # ============== Cổ phiếu VN30 ==============
-    "ACB": ["NGÂN HÀNG Á CHÂU"],
+    "ACB": ["NGÂN HÀNG TMCP Á CHÂU"],
     "BCM": ["BECAMEX", "TỔNG CÔNG TY ĐẦU TƯ VÀ PHÁT TRIỂN CÔNG NGHIỆP"],
     "BID": ["BIDV", "NGÂN HÀNG ĐẦU TƯ VÀ PHÁT TRIỂN VIỆT NAM"],
     "BVH": ["BẢO VIỆT"],
@@ -309,9 +309,9 @@ def find_all_tickers_in_soup(soup, ticker_company_map, site_name):
             "article", ".content-detail", "#mainContent"
         ],
         "vietnambiz": [
-            ".article-content", "article.content", ".content-detail",
-            "#mainContent", ".journal-content-article",
-            "body"
+            "div.post-body-content", ".article-content", "article.content", ".content-detail",
+            "#mainContent", ".journal-content-article"
+            
         ],
         "tinnhanhchungkhoan": [
             "article.story .body",
@@ -515,6 +515,18 @@ async def fetch_news(target_date_str=None):
 
                         # LỌC TIÊU ĐỀ: Bỏ qua các bài viết "Cổ phiếu cần quan tâm"
                         if "cổ phiếu cần quan tâm" in title.lower():
+                            continue
+
+                        # LỌC TIÊU ĐỀ: Bỏ qua các bài viết "Giao dịch chứng khoán"
+                        if "giao dịch chứng khoán" in title.lower():
+                            continue
+
+                        # LỌC TIÊU ĐỀ: Bỏ qua các bài viết "sự kiện"
+                        if "sự kiện" in title.lower():
+                            continue
+
+                        # LỌC TIÊU ĐỀ: Bỏ qua các bài viết "Nhận định thị trường"
+                        if "nhận định thị trường" in title.lower():
                             continue
 
                         # SỬA LỖI: Xử lý linh hoạt các miền của vietnambiz
