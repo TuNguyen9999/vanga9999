@@ -19,7 +19,18 @@ TELEGRAM_BOT_TOKEN = "7200591128:AAFtBUbfLpp-OoI9II9hQArMTZFwelTT6_Y"
 # Đối với Gmail, bạn cần dùng "Mật khẩu ứng dụng" thay vì mật khẩu đăng nhập thông thường.
 EMAIL_SENDER = "vcamnews@gmail.com"  # Email người gửi
 EMAIL_PASSWORD = "dsel ocad nqqj hdxy"    # Dán mật khẩu ứng dụng 16 ký tự của bạn vào đây
-EMAIL_RECIPIENT = "tunguyen3214@gmail.com" # Email người nhận
+EMAIL_RECIPIENT = "tunguyen3214@gmail.com" # Email người nhận chính
+# Danh sách email VietCapital
+VIETCAPITAL_EMAILS = [
+    "tu.nguyen@vietcapital.com.vn",
+    "ngoc.truong@vietcapital.com.vn", 
+    "son.pham@vietcapital.com.vn",
+    "minh.tran@vietcapital.com.vn",
+    "tien.huynh@vietcapital.com.vn",
+    "tam.nguyen@vietcapital.com.vn",
+    "diem.ngo@vietcapital.com.vn",
+    "vy.phan@vietcapital.com.vn"
+]
 SMTP_SERVER = "smtp.gmail.com" # Máy chủ SMTP cho Gmail
 SMTP_PORT = 465 # Cổng SMTP cho Gmail (sử dụng SSL)
 # ====================================================
@@ -607,17 +618,21 @@ def format_news_for_email(news_data, display_date_str):
     """
     return html
 
-def send_email(subject, html_content, sender, recipient, password):
-    """Gửi email với nội dung HTML bằng Gmail (sử dụng SSL)."""
+def send_email(subject, html_content, sender, recipients, password):
+    """Gửi email với nội dung HTML bằng Gmail (sử dụng SSL) cho nhiều người nhận."""
     if sender == "your_email@gmail.com" or password == "your_app_password":
         msg = "Thông tin email chưa được cấu hình trong file main.py. Bỏ qua việc gửi mail."
         print(f"CẢNH BÁO: {msg}")
         return False, msg
 
+    # Chuyển đổi recipients thành list nếu là string
+    if isinstance(recipients, str):
+        recipients = [recipients]
+
     message = MIMEMultipart("alternative")
     message["Subject"] = subject
     message["From"] = sender
-    message["To"] = recipient
+    message["To"] = ", ".join(recipients)
 
     message.attach(MIMEText(html_content, "html"))
     context = ssl.create_default_context()
@@ -625,9 +640,9 @@ def send_email(subject, html_content, sender, recipient, password):
         # Sử dụng SMTP_SSL cho Gmail trên cổng 465
         with smtplib.SMTP_SSL(SMTP_SERVER, SMTP_PORT, context=context) as server:
             server.login(sender, password)
-            server.sendmail(sender, recipient, message.as_string())
-        print(f"Email đã được gửi thành công tới {recipient}")
-        return True, f"Email đã được gửi thành công tới {recipient}"
+            server.sendmail(sender, recipients, message.as_string())
+        print(f"Email đã được gửi thành công tới {', '.join(recipients)}")
+        return True, f"Email đã được gửi thành công tới {', '.join(recipients)}"
     except Exception as e:
         error_msg = f"Lỗi khi gửi email: {e}"
         print(error_msg)
@@ -689,12 +704,13 @@ async def news_command_handler(update: Update, context):
         html_content = format_news_for_email(news_data, display_date_str)
 
         # Chạy hàm gửi mail đồng bộ trong một thread riêng để không block bot
+        recipients = [EMAIL_RECIPIENT] + VIETCAPITAL_EMAILS
         success, message = await asyncio.to_thread(
             send_email,
             subject,
             html_content,
             EMAIL_SENDER,
-            EMAIL_RECIPIENT,
+            recipients,
             EMAIL_PASSWORD
         )
 
