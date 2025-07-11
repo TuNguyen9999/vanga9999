@@ -7,6 +7,8 @@ import asyncio
 import os
 import re
 import ssl
+import signal
+import sys
 import threading
 import time
 from datetime import datetime
@@ -229,6 +231,65 @@ TICKER_COMPANY_MAP: Dict[str, List[str]] = {
 
 # ================== BIẾN GLOBAL ==================
 app_instance: Optional[Application] = None
+
+def cleanup_old_instances() -> None:
+    """
+    Dọn dẹp các instance cũ và đảm bảo chỉ có một instance chạy.
+    """
+    global app_instance
+    if app_instance:
+        try:
+            app_instance.stop()
+            app_instance.shutdown()
+        except Exception as e:
+            print(f"⚠️ Lỗi khi dọn dẹp instance cũ: {e}")
+        finally:
+            app_instance = None
+
+def check_telegram_connection() -> bool:
+    """
+    Kiểm tra kết nối đến Telegram API.
+    """
+    try:
+        import requests
+        response = requests.get(f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/getMe", timeout=10)
+        if response.status_code == 200:
+            print("✅ Kết nối Telegram API thành công")
+            return True
+        else:
+            print(f"❌ Lỗi kết nối Telegram API: {response.status_code}")
+            return False
+    except Exception as e:
+        print(f"❌ Không thể kết nối Telegram API: {e}")
+        return False
+
+def restart_polling() -> None:
+    """
+    Khởi động lại polling nếu gặp lỗi.
+    """
+    global app_instance
+    if app_instance:
+        try:
+            print("🔄 Đang khởi động lại polling...")
+            app_instance.run_polling(
+                allowed_updates=Update.ALL_TYPES,
+                drop_pending_updates=True,
+                close_loop=False,
+                stop_signals=None
+            )
+        except Exception as e:
+            print(f"❌ Lỗi khi khởi động lại polling: {e}")
+            # Thử lại sau 5 giây
+            time.sleep(5)
+            restart_polling()
+
+def signal_handler(signum, frame):
+    """
+    Xử lý signal để tắt bot một cách an toàn.
+    """
+    print(f"\n🛑 Nhận signal {signum}, đang tắt bot...")
+    cleanup_old_instances()
+    sys.exit(0)
 
 # ================== URL CẦN CRAWL ==================
 urls_to_crawl: List[str] = [
@@ -884,7 +945,7 @@ def run_scheduler() -> None:
             print(f"❌ Lỗi trong scheduled job: {e}")
     
     # Lập lịch gửi tin tức vào lúc 10:45 và 20:00 hàng ngày
-    schedule.every().day.at("15:59").do(schedule_job)
+    schedule.every().day.at("13:15").do(schedule_job)
     schedule.every().day.at("20:00").do(schedule_job)
     
     # Lập lịch ping server mỗi 15 phút để giữ nó hoạt động
@@ -931,9 +992,21 @@ def main() -> None:
     """
     global app_instance
     
+    # Dọn dẹp các instance cũ trước khi khởi động
+    cleanup_old_instances()
+    
+    # Đăng ký signal handler để tắt bot an toàn
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+    
     # Kiểm tra token
     if not TELEGRAM_BOT_TOKEN or TELEGRAM_BOT_TOKEN == "your_bot_token":
         print("❌ Lỗi: TELEGRAM_BOT_TOKEN chưa được cấu hình!")
+        return
+    
+    # Kiểm tra kết nối Telegram API
+    if not check_telegram_connection():
+        print("❌ Không thể kết nối Telegram API. Vui lòng kiểm tra token và kết nối internet.")
         return
     
     try:
@@ -941,6 +1014,10 @@ def main() -> None:
         app_instance = (
             Application.builder()
             .token(TELEGRAM_BOT_TOKEN)
+            .get_updates_read_timeout(30)
+            .get_updates_write_timeout(30)
+            .get_updates_connect_timeout(30)
+            .get_updates_pool_timeout(30)
             .build()
         )
         
@@ -969,12 +1046,23 @@ def main() -> None:
         flask_thread = threading.Thread(target=run_flask, daemon=True)
         flask_thread.start()
         
-        # Chạy Telegram bot với error handling
+        # Chạy Telegram bot với error handling và cấu hình polling an toàn
         print("🚀 Khởi động Telegram bot...")
-        app_instance.run_polling(
-            allowed_updates=Update.ALL_TYPES,
-            drop_pending_updates=True
-        )
+        try:
+            app_instance.run_polling(
+                allowed_updates=Update.ALL_TYPES,
+                drop_pending_updates=True,
+                close_loop=False,
+                stop_signals=None
+            )
+        except KeyboardInterrupt:
+            print("\n🛑 Bot được tắt bởi người dùng")
+            cleanup_old_instances()
+        except Exception as e:
+            print(f"❌ Lỗi trong polling: {e}")
+            print("🔄 Đang thử khởi động lại...")
+            time.sleep(3)
+            restart_polling()
         
     except Exception as e:
         print(f"❌ Lỗi khởi động bot: {e}")
