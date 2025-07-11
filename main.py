@@ -236,26 +236,26 @@ def cleanup_old_instances() -> None:
     """
     Dọn dẹp các instance cũ và đảm bảo chỉ có một instance chạy.
     """
-    global app_instance
-    if app_instance:
+    global updater_instance
+    if updater_instance:
         try:
-            app_instance.stop()
-            app_instance.shutdown()
+            updater_instance.stop()
+            updater_instance.idle()
         except Exception as e:
             print(f"⚠️ Lỗi khi dọn dẹp instance cũ: {e}")
         finally:
-            app_instance = None
+            updater_instance = None
 
-def create_application() -> Application:
+def create_updater() -> Updater:
     """
-    Tạo Application một cách an toàn.
+    Tạo Updater một cách an toàn.
     """
     try:
-        app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
-        print("✅ Application được tạo thành công")
-        return app
+        updater = Updater(token=TELEGRAM_BOT_TOKEN, use_context=True)
+        print("✅ Updater được tạo thành công")
+        return updater
     except Exception as e:
-        print(f"❌ Lỗi tạo Application: {e}")
+        print(f"❌ Lỗi tạo Updater: {e}")
         raise e
 
 def check_telegram_connection() -> bool:
@@ -284,13 +284,12 @@ def restart_polling() -> None:
     """
     Khởi động lại polling nếu gặp lỗi.
     """
-    global app_instance
-    if app_instance:
+    global updater_instance
+    if updater_instance:
         try:
             print("🔄 Đang khởi động lại polling...")
-            app_instance.run_polling(
-                drop_pending_updates=True
-            )
+            updater_instance.start_polling(drop_pending_updates=True)
+            updater_instance.idle()
         except Exception as e:
             print(f"❌ Lỗi khi khởi động lại polling: {e}")
             # Thử lại sau 5 giây
@@ -961,7 +960,7 @@ def run_scheduler() -> None:
             traceback.print_exc()
     
     # Lập lịch gửi tin tức vào lúc 12:00 và 20:00 hàng ngày
-    schedule.every().day.at("17:49").do(schedule_job)
+    schedule.every().day.at("12:00").do(schedule_job)
     schedule.every().day.at("20:00").do(schedule_job)
     
     # Lập lịch ping server mỗi 15 phút để giữ nó hoạt động
