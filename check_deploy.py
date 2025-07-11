@@ -16,7 +16,8 @@ def check_files():
         "requirements.txt", 
         "Procfile",
         "runtime.txt",
-        ".gitignore"
+        ".gitignore",
+        "render.yaml"
     ]
     
     missing_files = []
