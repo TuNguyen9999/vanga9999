@@ -25,7 +25,7 @@ TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "7200591128:AAFtBUbfLpp-OoI
 EMAIL_SENDER = os.getenv("EMAIL_SENDER", "vcamnews@gmail.com")  # Email người gửi
 EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "dsel ocad nqqj hdxy")    # Dán mật khẩu ứng dụng 16 ký tự của bạn vào đây
 EMAIL_RECIPIENT = os.getenv("EMAIL_RECIPIENT", "tunguyen3214@gmail.com") # Email người nhận chính
-# Danh sách email VietCapital
+# Danh sách email VietCapital - Tất cả nhân viên VietCapital sẽ nhận email
 VIETCAPITAL_EMAILS_STR = os.getenv("VIETCAPITAL_EMAILS", "tu.nguyen@vietcapital.com.vn")
 VIETCAPITAL_EMAILS = [email.strip() for email in VIETCAPITAL_EMAILS_STR.split(",") if email.strip()]
 SMTP_SERVER = "smtp.gmail.com" # Máy chủ SMTP cho Gmail
@@ -796,7 +796,7 @@ def run_scheduler():
             print(f"❌ Lỗi trong scheduled job: {e}")
     
     # Lập lịch gửi tin tức vào lúc 10:45 và 20:00 hàng ngày
-    schedule.every().day.at("11:21").do(schedule_job)
+    schedule.every().day.at("13:15").do(schedule_job)
     schedule.every().day.at("20:00").do(schedule_job)
     
     # Lập lịch ping server mỗi 15 phút để giữ nó hoạt động
