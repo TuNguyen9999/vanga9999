@@ -13,8 +13,8 @@ from telegram.ext import CommandHandler
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from main import TELEGRAM_BOT_TOKEN
 
-async def simple_test():
-    """Test đơn giản"""
+async def test_bot():
+    """Test bot đơn giản"""
     print("🧪 Test bot đơn giản...")
     
     try:
@@ -30,12 +30,12 @@ async def simple_test():
         print("✅ Handler thêm thành công")
         
         # Test polling ngắn
-        print("🔄 Test polling (5 giây)...")
+        print("🔄 Test polling (10 giây)...")
         await app.initialize()
         await app.start()
         
-        # Chạy trong 5 giây
-        await asyncio.sleep(5)
+        # Chạy trong 10 giây
+        await asyncio.sleep(10)
         
         await app.stop()
         await app.shutdown()
@@ -50,4 +50,4 @@ async def simple_test():
         return False
 
 if __name__ == "__main__":
-    asyncio.run(simple_test()) 
+    asyncio.run(test_bot()) 
