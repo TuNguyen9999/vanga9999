@@ -246,6 +246,18 @@ def cleanup_old_instances() -> None:
         finally:
             app_instance = None
 
+def create_application() -> Application:
+    """
+    Tạo Application một cách an toàn.
+    """
+    try:
+        app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
+        print("✅ Application được tạo thành công")
+        return app
+    except Exception as e:
+        print(f"❌ Lỗi tạo Application: {e}")
+        raise e
+
 def check_telegram_connection() -> bool:
     """
     Kiểm tra kết nối đến Telegram API.
@@ -277,9 +289,7 @@ def restart_polling() -> None:
         try:
             print("🔄 Đang khởi động lại polling...")
             app_instance.run_polling(
-                allowed_updates=Update.ALL_TYPES,
-                drop_pending_updates=True,
-                close_loop=False
+                drop_pending_updates=True
             )
         except Exception as e:
             print(f"❌ Lỗi khi khởi động lại polling: {e}")
@@ -951,7 +961,7 @@ def run_scheduler() -> None:
             traceback.print_exc()
     
     # Lập lịch gửi tin tức vào lúc 12:00 và 20:00 hàng ngày
-    schedule.every().day.at("17:39").do(schedule_job)
+    schedule.every().day.at("17:49").do(schedule_job)
     schedule.every().day.at("20:00").do(schedule_job)
     
     # Lập lịch ping server mỗi 15 phút để giữ nó hoạt động
@@ -1020,15 +1030,8 @@ def main() -> None:
         return
     
     try:
-        # Khởi tạo Application với cấu hình đầy đủ
-        app_instance = (
-            Application.builder()
-            .token(TELEGRAM_BOT_TOKEN)
-            .get_updates_read_timeout(30)
-            .get_updates_write_timeout(30)
-            .get_updates_connect_timeout(30)
-            .build()
-        )
+        # Khởi tạo Application với cấu hình đơn giản
+        app_instance = create_application()
         
         # Thêm trình xử lý cho lệnh /news
         app_instance.add_handler(CommandHandler("news", news_command_handler))
@@ -1060,9 +1063,7 @@ def main() -> None:
         print("🚀 Khởi động Telegram bot...")
         try:
             app_instance.run_polling(
-                allowed_updates=Update.ALL_TYPES,
-                drop_pending_updates=True,
-                close_loop=False
+                drop_pending_updates=True
             )
         except KeyboardInterrupt:
             print("\n🛑 Bot được tắt bởi người dùng")
