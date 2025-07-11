@@ -1,46 +1,45 @@
-"""
-Stock News Bot - Bot tự động thu thập và gửi tin tức chứng khoán
-Tuân thủ chuẩn PTB 20.7
-"""
-
-import asyncio
-import os
-import re
-import ssl
-import signal
-import sys
-import threading
-import time
-from datetime import datetime
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
-from typing import Dict, List, Optional, Set, Tuple
-
-import httpx
-import schedule
-import smtplib
+import requests
 from bs4 import BeautifulSoup
-from flask import Flask
+from datetime import datetime, timedelta
 from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+from telegram.ext import Application, CommandHandler, MessageHandler, filters
+import time
+import re
+import asyncio
+import httpx
+import smtplib
+import ssl
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+import schedule
+import threading
+import os
+from flask import Flask
 
 # ================== CẤU HÌNH ==================
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "7200591128:AAFtBUbfLpp-OoI9II9hQArMTZFwelTT6_Y")
 
 # ================== CẤU HÌNH EMAIL ==================
-EMAIL_SENDER = os.getenv("EMAIL_SENDER", "vcamnews@gmail.com")
-EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "dsel ocad nqqj hdxy")
-EMAIL_RECIPIENT = os.getenv("EMAIL_RECIPIENT", "tunguyen3214@gmail.com")
+# QUAN TRỌNG: Điền thông tin của bạn vào đây.
+# Đối với Gmail, bạn cần dùng "Mật khẩu ứng dụng" thay vì mật khẩu đăng nhập thông thường.
+EMAIL_SENDER = os.getenv("EMAIL_SENDER", "vcamnews@gmail.com")  # Email người gửi
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "dsel ocad nqqj hdxy")    # Dán mật khẩu ứng dụng 16 ký tự của bạn vào đây
+EMAIL_RECIPIENT = os.getenv("EMAIL_RECIPIENT", "tunguyen3214@gmail.com") # Email người nhận chính
+# Danh sách email VietCapital - Tất cả nhân viên VietCapital sẽ nhận email
 VIETCAPITAL_EMAILS_STR = os.getenv("VIETCAPITAL_EMAILS", "tu.nguyen@vietcapital.com.vn")
 VIETCAPITAL_EMAILS = [email.strip() for email in VIETCAPITAL_EMAILS_STR.split(",") if email.strip()]
-SMTP_SERVER = "smtp.gmail.com"
-SMTP_PORT = 465
+SMTP_SERVER = "smtp.gmail.com" # Máy chủ SMTP cho Gmail
+SMTP_PORT = 465 # Cổng SMTP cho Gmail (sử dụng SSL)
+# ====================================================
 
 # Khởi tạo Flask app để tạo web server
 app = Flask(__name__)
 
-# ================== DANH SÁCH MÃ CỔ PHIẾU ==================
-TICKER_COMPANY_MAP: Dict[str, List[str]] = {
+# ==============================================
+# Danh sách mã cổ phiếu và tên công ty tương ứng cần theo dõi
+# Bạn có thể thay đổi, thêm hoặc bớt các cặp mã cổ phiếu - tên công ty trong danh sách dưới đây.
+# Tên công ty có thể là tên đầy đủ, tên viết tắt, hoặc các tên thường gọi.
+TICKER_COMPANY_MAP = {
     # ============== Cổ phiếu VN30 ==============
     "ACB": ["NGÂN HÀNG TMCP Á CHÂU"],
     "BCM": ["BECAMEX", "TỔNG CÔNG TY ĐẦU TƯ VÀ PHÁT TRIỂN CÔNG NGHIỆP"],
@@ -229,70 +228,11 @@ TICKER_COMPANY_MAP: Dict[str, List[str]] = {
     "KSV": ["KHOÁNG SẢN VIỆT NAM"]
 }
 
-# ================== BIẾN GLOBAL ==================
-app_instance: Optional[Application] = None
+# Biến global để lưu trữ application
+app_instance = None
 
-def cleanup_old_instances() -> None:
-    """
-    Dọn dẹp các instance cũ và đảm bảo chỉ có một instance chạy.
-    """
-    global app_instance
-    if app_instance:
-        try:
-            app_instance.stop()
-            app_instance.shutdown()
-        except Exception as e:
-            print(f"⚠️ Lỗi khi dọn dẹp instance cũ: {e}")
-        finally:
-            app_instance = None
-
-def check_telegram_connection() -> bool:
-    """
-    Kiểm tra kết nối đến Telegram API.
-    """
-    try:
-        import requests
-        response = requests.get(f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/getMe", timeout=10)
-        if response.status_code == 200:
-            print("✅ Kết nối Telegram API thành công")
-            return True
-        else:
-            print(f"❌ Lỗi kết nối Telegram API: {response.status_code}")
-            return False
-    except Exception as e:
-        print(f"❌ Không thể kết nối Telegram API: {e}")
-        return False
-
-def restart_polling() -> None:
-    """
-    Khởi động lại polling nếu gặp lỗi.
-    """
-    global app_instance
-    if app_instance:
-        try:
-            print("🔄 Đang khởi động lại polling...")
-            app_instance.run_polling(
-                allowed_updates=Update.ALL_TYPES,
-                drop_pending_updates=True,
-                close_loop=False,
-                stop_signals=None
-            )
-        except Exception as e:
-            print(f"❌ Lỗi khi khởi động lại polling: {e}")
-            # Thử lại sau 5 giây
-            time.sleep(5)
-            restart_polling()
-
-def signal_handler(signum, frame):
-    """
-    Xử lý signal để tắt bot một cách an toàn.
-    """
-    print(f"\n🛑 Nhận signal {signum}, đang tắt bot...")
-    cleanup_old_instances()
-    sys.exit(0)
-
-# ================== URL CẦN CRAWL ==================
-urls_to_crawl: List[str] = [
+# Các URL cần crawl
+urls_to_crawl = [
     "https://cafef.vn/thi-truong-chung-khoan.chn",  # Thị trường chứng khoán
     "https://cafef.vn/doanh-nghiep.chn",  # Doanh nghiệp
     "https://cafef.vn/tai-chinh-ngan-hang.chn",  # Tài chính - Ngân hàng
@@ -307,21 +247,10 @@ urls_to_crawl: List[str] = [
 ]
 
 
-def check_stock_and_company_in_soup(
-    soup: BeautifulSoup, 
-    ticker_company_map: Dict[str, List[str]], 
-    site_name: str
-) -> Optional[str]:
+def check_stock_and_company_in_soup(soup, ticker_company_map, site_name):
     """
     Kiểm tra đồng thời mã cổ phiếu và tên công ty trong nội dung bài viết.
-    
-    Args:
-        soup: BeautifulSoup object của trang web
-        ticker_company_map: Dictionary mapping mã cổ phiếu với tên công ty
-        site_name: Tên trang web (cafef, vietnambiz, tinnhanhchungkhoan)
-        
-    Returns:
-        Mã cổ phiếu nếu tìm thấy cả hai, None nếu không tìm thấy
+    Trả về mã cổ phiếu nếu tìm thấy cả hai.
     """
     # Cải tiến: Sử dụng selectors riêng cho từng trang
     content_selectors = {
@@ -382,21 +311,11 @@ def check_stock_and_company_in_soup(
                             return ticker  # Trả về ticker nếu tìm thấy cả hai
     return None
 
-def find_all_tickers_in_soup(
-    soup: BeautifulSoup, 
-    ticker_company_map: Dict[str, List[str]], 
-    site_name: str
-) -> List[str]:
+# Hàm mới: Tìm tất cả mã cổ phiếu xuất hiện trong bài viết
+
+def find_all_tickers_in_soup(soup, ticker_company_map, site_name):
     """
-    Tìm tất cả mã cổ phiếu xuất hiện trong nội dung bài viết.
-    
-    Args:
-        soup: BeautifulSoup object của trang web
-        ticker_company_map: Dictionary mapping mã cổ phiếu với tên công ty
-        site_name: Tên trang web (cafef, vietnambiz, tinnhanhchungkhoan)
-        
-    Returns:
-        Danh sách mã cổ phiếu tìm thấy
+    Trả về danh sách tất cả mã cổ phiếu xuất hiện trong nội dung bài viết (có cả tên công ty).
     """
     content_selectors = {
         "cafef": [
@@ -449,16 +368,8 @@ def find_all_tickers_in_soup(
                             break
     return list(tickers_found)
 
-def parse_date_from_soup(soup: BeautifulSoup) -> Optional[datetime]:
-    """
-    Lấy ngày đăng bài từ đối tượng BeautifulSoup.
-    
-    Args:
-        soup: BeautifulSoup object của trang web
-        
-    Returns:
-        Datetime object nếu tìm thấy, None nếu không tìm thấy
-    """
+def parse_date_from_soup(soup):
+    """Lấy ngày đăng bài từ đối tượng BeautifulSoup."""
 
     # Chiến lược 1 (Mới): Lấy từ meta tags (đáng tin cậy nhất)
     meta_selectors = [
@@ -517,17 +428,8 @@ def parse_date_from_soup(soup: BeautifulSoup) -> Optional[datetime]:
                     pass # Thử định dạng tiếp theo
     return None
 
-def get_page_urls(url: str, page: int = 1) -> str:
-    """
-    Lấy URL cho trang phân trang một cách chính xác và an toàn.
-    
-    Args:
-        url: URL gốc của trang
-        page: Số trang cần lấy (mặc định là 1)
-        
-    Returns:
-        URL đã được format cho trang cụ thể
-    """
+def get_page_urls(url, page=1):
+    """Lấy URL cho trang phân trang một cách chính xác và an toàn."""
     if page == 1:
         return url
     if "vietnambiz.vn" in url:
@@ -539,15 +441,9 @@ def get_page_urls(url: str, page: int = 1) -> str:
     # Thay thế phần đuôi .chn bằng /trang-{page}.chn cho Cafef
     return url.replace(".chn", f"/trang-{page}.chn")
 
-async def fetch_news(target_date_str: Optional[str] = None) -> List[Dict[str, str]]:
+async def fetch_news(target_date_str=None):
     """
-    Tìm nạp tin tức từ các trang web tài chính cho một ngày cụ thể.
-    
-    Args:
-        target_date_str: Chuỗi ngày theo định dạng dd-mm-yyyy hoặc dd/mm/yyyy
-        
-    Returns:
-        Danh sách các bài viết với thông tin mã cổ phiếu, tiêu đề, link và ngày đăng
+    Tìm nạp tin tức từ Cafef và Vietnambiz cho một ngày cụ thể.
     """
     if target_date_str:
         try:
@@ -689,17 +585,8 @@ async def fetch_news(target_date_str: Optional[str] = None) -> List[Dict[str, st
                         continue
     return data
 
-def format_news_for_email(news_data: List[Dict[str, str]], display_date_str: str) -> str:
-    """
-    Định dạng danh sách tin tức thành một chuỗi HTML đẹp mắt cho email.
-    
-    Args:
-        news_data: Danh sách các bài viết
-        display_date_str: Chuỗi ngày để hiển thị
-        
-    Returns:
-        Chuỗi HTML đã được format
-    """
+def format_news_for_email(news_data, display_date_str):
+    """Định dạng danh sách tin tức thành một chuỗi HTML đẹp mắt cho email."""
     html = f"""
     <html>
     <head>
@@ -734,26 +621,8 @@ def format_news_for_email(news_data: List[Dict[str, str]], display_date_str: str
     """
     return html
 
-def send_email(
-    subject: str, 
-    html_content: str, 
-    sender: str, 
-    recipients: List[str], 
-    password: str
-) -> Tuple[bool, str]:
-    """
-    Gửi email với nội dung HTML bằng Gmail (sử dụng SSL) cho nhiều người nhận.
-    
-    Args:
-        subject: Tiêu đề email
-        html_content: Nội dung HTML của email
-        sender: Email người gửi
-        recipients: Danh sách email người nhận
-        password: Mật khẩu ứng dụng Gmail
-        
-    Returns:
-        Tuple (success, message) - success là True nếu gửi thành công
-    """
+def send_email(subject, html_content, sender, recipients, password):
+    """Gửi email với nội dung HTML bằng Gmail (sử dụng SSL) cho nhiều người nhận."""
     if sender == "your_email@gmail.com" or password == "your_app_password":
         msg = "Thông tin email chưa được cấu hình trong file main.py. Bỏ qua việc gửi mail."
         print(f"CẢNH BÁO: {msg}")
@@ -783,14 +652,8 @@ def send_email(
         return False, error_msg
 
 
-async def news_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """
-    Xử lý lệnh /news, tìm nạp, hiển thị và gửi tin tức qua email.
-    
-    Args:
-        update: Telegram Update object
-        context: Telegram Context object
-    """
+async def news_command_handler(update: Update, context):
+    """Xử lý lệnh /news, tìm nạp, hiển thị và gửi tin tức qua email."""
     
     target_date_str = None
     # Kiểm tra xem người dùng có cung cấp ngày không
@@ -863,20 +726,16 @@ async def news_command_handler(update: Update, context: ContextTypes.DEFAULT_TYP
         print(f"Lỗi khi xử lý lệnh /news: {e}")
         await update.message.reply_text("❌ Rất tiếc, đã có lỗi xảy ra trong quá trình tìm nạp tin tức.")
 
-async def help_message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """
-    Gửi tin nhắn hướng dẫn khi người dùng nhắn tin thông thường.
-    
-    Args:
-        update: Telegram Update object
-        context: Telegram Context object
-    """
+async def help_message_handler(update: Update, context):
+    """Gửi tin nhắn hướng dẫn khi người dùng nhắn tin thông thường."""
     await update.message.reply_text("👋 Chào bạn! Vui lòng sử dụng lệnh /news [dd-mm-yyyy] để nhận tin tức. Nếu không nhập ngày, bot sẽ lấy tin tức hôm nay.")
 
-async def auto_send_news() -> None:
-    """
-    Hàm tự động gửi tin tức mà không cần context từ user.
-    """
+async def auto_send_news():
+    """Hàm tự động gửi tin tức mà không cần context từ user."""
+    if not app_instance:
+        print("❌ Bot chưa được khởi tạo")
+        return
+    
     try:
         print("🤖 Tự động gửi tin tức...")
         
@@ -913,13 +772,9 @@ async def auto_send_news() -> None:
             
     except Exception as e:
         print(f"❌ Lỗi khi tự động gửi tin tức: {e}")
-        import traceback
-        traceback.print_exc()
 
-def ping_server() -> None:
-    """
-    Hàm ping để giữ server hoạt động.
-    """
+def ping_server():
+    """Hàm ping để giữ server hoạt động."""
     try:
         import requests
         # Ping chính server của mình để giữ nó hoạt động
@@ -928,32 +783,26 @@ def ping_server() -> None:
     except Exception as e:
         print(f"❌ Lỗi khi ping server: {e}")
 
-def run_scheduler() -> None:
-    """
-    Chạy scheduler trong thread riêng.
-    """
+def run_scheduler():
+    """Chạy scheduler trong thread riêng."""
     def schedule_job():
         try:
-            print(f"🕐 Thực hiện scheduled job lúc {datetime.now().strftime('%H:%M:%S')}")
             # Tạo event loop mới cho thread này
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             loop.run_until_complete(auto_send_news())
             loop.close()
-            print(f"✅ Hoàn thành scheduled job lúc {datetime.now().strftime('%H:%M:%S')}")
         except Exception as e:
             print(f"❌ Lỗi trong scheduled job: {e}")
-            import traceback
-            traceback.print_exc()
     
-    # Lập lịch gửi tin tức vào lúc 13:15 và 20:00 hàng ngày
-    schedule.every().day.at("16:37").do(schedule_job)
+    # Lập lịch gửi tin tức vào lúc 10:45 và 20:00 hàng ngày
+    schedule.every().day.at("13:46").do(schedule_job)
     schedule.every().day.at("20:00").do(schedule_job)
     
     # Lập lịch ping server mỗi 15 phút để giữ nó hoạt động
     schedule.every(15).minutes.do(ping_server)
     
-    print("⏰ Đã lập lịch tự động gửi tin tức vào lúc 13:15 và 20:00 hàng ngày")
+    print("⏰ Đã lập lịch tự động gửi tin tức vào lúc 11:03 và 20:00 hàng ngày")
     print("🔄 Đã lập lịch ping server mỗi 15 phút để giữ hoạt động")
     
     while True:
@@ -962,122 +811,53 @@ def run_scheduler() -> None:
             time.sleep(60)  # Kiểm tra mỗi phút
         except Exception as e:
             print(f"❌ Lỗi trong scheduler: {e}")
-            import traceback
-            traceback.print_exc()
             time.sleep(60)  # Tiếp tục chạy
 
-def start_scheduler() -> None:
-    """
-    Khởi động scheduler trong thread riêng.
-    """
+def start_scheduler():
+    """Khởi động scheduler trong thread riêng."""
     scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
     scheduler_thread.start()
     print("🚀 Scheduler đã được khởi động")
 
-# ================== FLASK ROUTES ==================
+# Flask routes
 @app.route('/')
-def home() -> str:
-    """Trang chủ của bot."""
+def home():
     return "🤖 Stock News Bot đang hoạt động!"
 
 @app.route('/ping')
-def ping() -> str:
-    """Endpoint ping để kiểm tra trạng thái bot."""
+def ping():
     return "🔄 Pong! Bot vẫn hoạt động bình thường."
 
 @app.route('/health')
-def health() -> Dict[str, str]:
-    """Endpoint health check."""
+def health():
     return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
-def main() -> None:
-    """
-    Hàm chính khởi động bot.
-    """
+def main():
     global app_instance
+    app_instance = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
     
-    print(f"🚀 Khởi động Stock News Bot lúc {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    # Thêm trình xử lý cho lệnh /news
+    app_instance.add_handler(CommandHandler("news", news_command_handler))
     
-    # Dọn dẹp các instance cũ trước khi khởi động
-    cleanup_old_instances()
-    
-    # Đăng ký signal handler để tắt bot an toàn
-    signal.signal(signal.SIGINT, signal_handler)
-    signal.signal(signal.SIGTERM, signal_handler)
-    
-    # Kiểm tra token
-    if not TELEGRAM_BOT_TOKEN or TELEGRAM_BOT_TOKEN == "your_bot_token":
-        print("❌ Lỗi: TELEGRAM_BOT_TOKEN chưa được cấu hình!")
-        return
-    
-    # Kiểm tra kết nối Telegram API
-    if not check_telegram_connection():
-        print("❌ Không thể kết nối Telegram API. Vui lòng kiểm tra token và kết nối internet.")
-        return
-    
-    try:
-        # Khởi tạo Application với cấu hình đầy đủ
-        app_instance = (
-            Application.builder()
-            .token(TELEGRAM_BOT_TOKEN)
-            .get_updates_read_timeout(30)
-            .get_updates_write_timeout(30)
-            .get_updates_connect_timeout(30)
-            .get_updates_pool_timeout(30)
-            .build()
-        )
-        
-        # Thêm trình xử lý cho lệnh /news
-        app_instance.add_handler(CommandHandler("news", news_command_handler))
-        
-        # Thêm trình xử lý cho các tin nhắn văn bản khác để hướng dẫn người dùng
-        app_instance.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, help_message_handler))
+    # Thêm trình xử lý cho các tin nhắn văn bản khác để hướng dẫn người dùng
+    app_instance.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, help_message_handler))
 
-        # Khởi động scheduler
-        start_scheduler()
+    # Khởi động scheduler
+    start_scheduler()
 
-        print("🤖 Bot đang chạy... Gửi lệnh /news [dd-mm-yyyy] để bắt đầu.")
-        print("⏰ Bot sẽ tự động gửi tin tức vào lúc 13:15 và 20:00 hàng ngày")
-        print("🔄 Bot sẽ ping server mỗi 15 phút để giữ hoạt động")
-        print(f"📅 Thời gian hiện tại: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
-        
-        # Chạy Flask app trong thread riêng
-        def run_flask() -> None:
-            """Chạy Flask app."""
-            try:
-                port = int(os.environ.get('PORT', 8000))
-                app.run(host='0.0.0.0', port=port, debug=False)
-            except Exception as e:
-                print(f"❌ Lỗi Flask app: {e}")
-        
-        flask_thread = threading.Thread(target=run_flask, daemon=True)
-        flask_thread.start()
-        
-        # Chạy Telegram bot với error handling và cấu hình polling an toàn
-        print("🚀 Khởi động Telegram bot...")
-        try:
-            app_instance.run_polling(
-                allowed_updates=Update.ALL_TYPES,
-                drop_pending_updates=True,
-                close_loop=False,
-                stop_signals=None
-            )
-        except KeyboardInterrupt:
-            print("\n🛑 Bot được tắt bởi người dùng")
-            cleanup_old_instances()
-        except Exception as e:
-            print(f"❌ Lỗi trong polling: {e}")
-            import traceback
-            traceback.print_exc()
-            print("🔄 Đang thử khởi động lại sau 5 giây...")
-            time.sleep(5)
-            restart_polling()
-        
-    except Exception as e:
-        print(f"❌ Lỗi khởi động bot: {e}")
-        import traceback
-        traceback.print_exc()
-        return
+    print("🤖 Bot đang chạy... Gửi lệnh /news [dd-mm-yyyy] để bắt đầu.")
+    print("⏰ Bot sẽ tự động gửi tin tức vào lúc 10:45 và 20:00 hàng ngày")
+    print("🔄 Bot sẽ ping server mỗi 15 phút để giữ hoạt động")
+    
+    # Chạy Flask app trong thread riêng
+    def run_flask():
+        app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8000)))
+    
+    flask_thread = threading.Thread(target=run_flask, daemon=True)
+    flask_thread.start()
+    
+    # Chạy Telegram bot
+    app_instance.run_polling()
 
 if __name__ == '__main__':
     main()
