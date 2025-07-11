@@ -1,0 +1,33 @@
+{
+  "name": "Stock News Bot",
+  "description": "Bot tự động thu thập và gửi tin tức chứng khoán",
+  "repository": "https://github.com/yourusername/stock-news-bot",
+  "keywords": ["python", "telegram", "bot", "news", "stock"],
+  "env": {
+    "TELEGRAM_BOT_TOKEN": {
+      "description": "Telegram Bot Token",
+      "required": true
+    },
+    "EMAIL_SENDER": {
+      "description": "Email người gửi",
+      "required": true
+    },
+    "EMAIL_PASSWORD": {
+      "description": "App Password cho Gmail",
+      "required": true
+    },
+    "EMAIL_RECIPIENT": {
+      "description": "Email người nhận chính",
+      "required": true
+    },
+    "VIETCAPITAL_EMAILS": {
+      "description": "Danh sách email VietCapital (phân cách bằng dấu phẩy)",
+      "required": false
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/python"
+    }
+  ]
+} 
