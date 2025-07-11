@@ -946,14 +946,14 @@ def run_scheduler() -> None:
             import traceback
             traceback.print_exc()
     
-    # Lập lịch gửi tin tức vào lúc 13:15 và 20:00 hàng ngày
-    schedule.every().day.at("13:15").do(schedule_job)
+    # Lập lịch gửi tin tức vào lúc 12:00 và 20:00 hàng ngày
+    schedule.every().day.at("12:00").do(schedule_job)
     schedule.every().day.at("20:00").do(schedule_job)
     
     # Lập lịch ping server mỗi 15 phút để giữ nó hoạt động
     schedule.every(15).minutes.do(ping_server)
     
-    print("⏰ Đã lập lịch tự động gửi tin tức vào lúc 13:15 và 20:00 hàng ngày")
+    print("⏰ Đã lập lịch tự động gửi tin tức vào lúc 12:00 và 20:00 hàng ngày")
     print("🔄 Đã lập lịch ping server mỗi 15 phút để giữ hoạt động")
     
     while True:
@@ -1037,7 +1037,7 @@ def main() -> None:
         start_scheduler()
 
         print("🤖 Bot đang chạy... Gửi lệnh /news [dd-mm-yyyy] để bắt đầu.")
-        print("⏰ Bot sẽ tự động gửi tin tức vào lúc 13:15 và 20:00 hàng ngày")
+        print("⏰ Bot sẽ tự động gửi tin tức vào lúc 12:00 và 20:00 hàng ngày")
         print("🔄 Bot sẽ ping server mỗi 15 phút để giữ hoạt động")
         print(f"📅 Thời gian hiện tại: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         
