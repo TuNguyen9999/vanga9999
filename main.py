@@ -796,7 +796,7 @@ def run_scheduler():
             print(f"❌ Lỗi trong scheduled job: {e}")
     
     # Lập lịch gửi tin tức vào lúc 10:45 và 20:00 hàng ngày
-    schedule.every().day.at("13:46").do(schedule_job)
+    schedule.every().day.at("18:03").do(schedule_job)
     schedule.every().day.at("20:00").do(schedule_job)
     
     # Lập lịch ping server mỗi 15 phút để giữ nó hoạt động
@@ -834,30 +834,44 @@ def health():
 
 def main():
     global app_instance
-    app_instance = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
     
-    # Thêm trình xử lý cho lệnh /news
-    app_instance.add_handler(CommandHandler("news", news_command_handler))
-    
-    # Thêm trình xử lý cho các tin nhắn văn bản khác để hướng dẫn người dùng
-    app_instance.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, help_message_handler))
+    try:
+        # Khởi tạo Application
+        app_instance = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
+        print("✅ Application được tạo thành công")
+        
+        # Thêm trình xử lý cho lệnh /news
+        app_instance.add_handler(CommandHandler("news", news_command_handler))
+        app_instance.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, help_message_handler))
+        print("✅ Handlers được thêm thành công")
 
-    # Khởi động scheduler
-    start_scheduler()
+        # Khởi động scheduler
+        start_scheduler()
 
-    print("🤖 Bot đang chạy... Gửi lệnh /news [dd-mm-yyyy] để bắt đầu.")
-    print("⏰ Bot sẽ tự động gửi tin tức vào lúc 10:45 và 20:00 hàng ngày")
-    print("🔄 Bot sẽ ping server mỗi 15 phút để giữ hoạt động")
-    
-    # Chạy Flask app trong thread riêng
-    def run_flask():
-        app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8000)))
-    
-    flask_thread = threading.Thread(target=run_flask, daemon=True)
-    flask_thread.start()
-    
-    # Chạy Telegram bot
-    app_instance.run_polling()
+        print("🤖 Bot đang chạy... Gửi lệnh /news [dd-mm-yyyy] để bắt đầu.")
+        print("⏰ Bot sẽ tự động gửi tin tức vào lúc 18:03 và 20:00 hàng ngày")
+        print("🔄 Bot sẽ ping server mỗi 15 phút để giữ hoạt động")
+        
+        # Chạy Flask app trong thread riêng
+        def run_flask():
+            try:
+                port = int(os.environ.get('PORT', 8000))
+                app.run(host='0.0.0.0', port=port, debug=False)
+            except Exception as e:
+                print(f"❌ Lỗi Flask app: {e}")
+        
+        flask_thread = threading.Thread(target=run_flask, daemon=True)
+        flask_thread.start()
+        print("✅ Flask app đã khởi động")
+        
+        # Chạy Telegram bot
+        print("🚀 Khởi động Telegram bot...")
+        app_instance.run_polling(drop_pending_updates=True)
+        
+    except Exception as e:
+        print(f"❌ Lỗi khởi động bot: {e}")
+        import traceback
+        traceback.print_exc()
 
 if __name__ == '__main__':
     main()
