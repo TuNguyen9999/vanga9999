@@ -11,29 +11,29 @@ import smtplib
 import ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import schedule
+import threading
+import os
+from flask import Flask
+
 # ================== CẤU HÌNH ==================
-TELEGRAM_BOT_TOKEN = "7200591128:AAFtBUbfLpp-OoI9II9hQArMTZFwelTT6_Y"
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "7200591128:AAFtBUbfLpp-OoI9II9hQArMTZFwelTT6_Y")
 
 # ================== CẤU HÌNH EMAIL ==================
 # QUAN TRỌNG: Điền thông tin của bạn vào đây.
 # Đối với Gmail, bạn cần dùng "Mật khẩu ứng dụng" thay vì mật khẩu đăng nhập thông thường.
-EMAIL_SENDER = "vcamnews@gmail.com"  # Email người gửi
-EMAIL_PASSWORD = "dsel ocad nqqj hdxy"    # Dán mật khẩu ứng dụng 16 ký tự của bạn vào đây
-EMAIL_RECIPIENT = "tunguyen3214@gmail.com" # Email người nhận chính
+EMAIL_SENDER = os.getenv("EMAIL_SENDER", "vcamnews@gmail.com")  # Email người gửi
+EMAIL_PASSWORD = os.getenv("EMAIL_PASSWORD", "dsel ocad nqqj hdxy")    # Dán mật khẩu ứng dụng 16 ký tự của bạn vào đây
+EMAIL_RECIPIENT = os.getenv("EMAIL_RECIPIENT", "tunguyen3214@gmail.com") # Email người nhận chính
 # Danh sách email VietCapital
-VIETCAPITAL_EMAILS = [
-    "tu.nguyen@vietcapital.com.vn",
-    "ngoc.truong@vietcapital.com.vn", 
-    "son.pham@vietcapital.com.vn",
-    "minh.tran@vietcapital.com.vn",
-    "tien.huynh@vietcapital.com.vn",
-    "tam.nguyen@vietcapital.com.vn",
-    "diem.ngo@vietcapital.com.vn",
-    "vy.phan@vietcapital.com.vn"
-]
+VIETCAPITAL_EMAILS_STR = os.getenv("VIETCAPITAL_EMAILS", "tu.nguyen@vietcapital.com.vn")
+VIETCAPITAL_EMAILS = [email.strip() for email in VIETCAPITAL_EMAILS_STR.split(",") if email.strip()]
 SMTP_SERVER = "smtp.gmail.com" # Máy chủ SMTP cho Gmail
 SMTP_PORT = 465 # Cổng SMTP cho Gmail (sử dụng SSL)
 # ====================================================
+
+# Khởi tạo Flask app để tạo web server
+app = Flask(__name__)
 
 # ==============================================
 # Danh sách mã cổ phiếu và tên công ty tương ứng cần theo dõi
@@ -227,6 +227,9 @@ TICKER_COMPANY_MAP = {
     "FOC": ["FPT ONLINE"],
     "KSV": ["KHOÁNG SẢN VIỆT NAM"]
 }
+
+# Biến global để lưu trữ application
+app_instance = None
 
 # Các URL cần crawl
 urls_to_crawl = [
@@ -727,18 +730,134 @@ async def help_message_handler(update: Update, context):
     """Gửi tin nhắn hướng dẫn khi người dùng nhắn tin thông thường."""
     await update.message.reply_text("👋 Chào bạn! Vui lòng sử dụng lệnh /news [dd-mm-yyyy] để nhận tin tức. Nếu không nhập ngày, bot sẽ lấy tin tức hôm nay.")
 
+async def auto_send_news():
+    """Hàm tự động gửi tin tức mà không cần context từ user."""
+    if not app_instance:
+        print("❌ Bot chưa được khởi tạo")
+        return
+    
+    try:
+        print("🤖 Tự động gửi tin tức...")
+        
+        # Lấy ngày hiện tại
+        current_date = datetime.now()
+        target_date_str = current_date.strftime("%d-%m-%Y")
+        display_date_str = current_date.strftime('%d/%m/%Y')
+        
+        # Tìm nạp tin tức
+        news_data = await fetch_news(target_date_str)
+        
+        if not news_data:
+            print(f"😕 Không tìm thấy tin tức nào cho ngày {display_date_str}.")
+            return
+        
+        # Gửi email tự động
+        subject = f"Tin tức chứng khoán ngày {display_date_str}"
+        html_content = format_news_for_email(news_data, display_date_str)
+        
+        recipients = [EMAIL_RECIPIENT] + VIETCAPITAL_EMAILS
+        success, message = await asyncio.to_thread(
+            send_email,
+            subject,
+            html_content,
+            EMAIL_SENDER,
+            recipients,
+            EMAIL_PASSWORD
+        )
+        
+        if success:
+            print(f"✅ Tự động gửi email thành công: {message}")
+        else:
+            print(f"❌ Lỗi khi tự động gửi email: {message}")
+            
+    except Exception as e:
+        print(f"❌ Lỗi khi tự động gửi tin tức: {e}")
+
+def ping_server():
+    """Hàm ping để giữ server hoạt động."""
+    try:
+        import requests
+        # Ping chính server của mình để giữ nó hoạt động
+        response = requests.get("https://stock-news-bot.onrender.com/ping", timeout=10)
+        print(f"🔄 Ping server: {response.status_code}")
+    except Exception as e:
+        print(f"❌ Lỗi khi ping server: {e}")
+
+def run_scheduler():
+    """Chạy scheduler trong thread riêng."""
+    def schedule_job():
+        try:
+            # Tạo event loop mới cho thread này
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            loop.run_until_complete(auto_send_news())
+            loop.close()
+        except Exception as e:
+            print(f"❌ Lỗi trong scheduled job: {e}")
+    
+    # Lập lịch gửi tin tức vào lúc 10:45 và 20:00 hàng ngày
+    schedule.every().day.at("10:57").do(schedule_job)
+    schedule.every().day.at("20:00").do(schedule_job)
+    
+    # Lập lịch ping server mỗi 15 phút để giữ nó hoạt động
+    schedule.every(15).minutes.do(ping_server)
+    
+    print("⏰ Đã lập lịch tự động gửi tin tức vào lúc 10:45 và 20:00 hàng ngày")
+    print("🔄 Đã lập lịch ping server mỗi 15 phút để giữ hoạt động")
+    
+    while True:
+        try:
+            schedule.run_pending()
+            time.sleep(60)  # Kiểm tra mỗi phút
+        except Exception as e:
+            print(f"❌ Lỗi trong scheduler: {e}")
+            time.sleep(60)  # Tiếp tục chạy
+
+def start_scheduler():
+    """Khởi động scheduler trong thread riêng."""
+    scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
+    scheduler_thread.start()
+    print("🚀 Scheduler đã được khởi động")
+
+# Flask routes
+@app.route('/')
+def home():
+    return "🤖 Stock News Bot đang hoạt động!"
+
+@app.route('/ping')
+def ping():
+    return "🔄 Pong! Bot vẫn hoạt động bình thường."
+
+@app.route('/health')
+def health():
+    return {"status": "healthy", "timestamp": datetime.now().isoformat()}
 
 def main():
-    app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
+    global app_instance
+    app_instance = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
     
     # Thêm trình xử lý cho lệnh /news
-    app.add_handler(CommandHandler("news", news_command_handler))
+    app_instance.add_handler(CommandHandler("news", news_command_handler))
     
     # Thêm trình xử lý cho các tin nhắn văn bản khác để hướng dẫn người dùng
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, help_message_handler))
+    app_instance.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, help_message_handler))
+
+    # Khởi động scheduler
+    start_scheduler()
 
     print("🤖 Bot đang chạy... Gửi lệnh /news [dd-mm-yyyy] để bắt đầu.")
-    app.run_polling()
+    print("⏰ Bot sẽ tự động gửi tin tức vào lúc 10:45 và 20:00 hàng ngày")
+    print("🔄 Bot sẽ ping server mỗi 15 phút để giữ hoạt động")
+    
+    # Chạy Flask app trong thread riêng
+    def run_flask():
+        app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8000)))
+    
+    flask_thread = threading.Thread(target=run_flask, daemon=True)
+    flask_thread.start()
+    
+    # Chạy Telegram bot
+    app_instance.run_polling()
 
 if __name__ == '__main__':
     main()
