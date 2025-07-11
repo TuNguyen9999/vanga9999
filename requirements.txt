@@ -2,14 +2,14 @@
 # Tuân thủ chuẩn PTB 20.7
 
 # Core dependencies
-python-telegram-bot==20.7
-beautifulsoup4==4.12.2
-httpx==0.25.2
-flask==3.0.0
-schedule==1.2.0
-requests==2.31.0
+python-telegram-bot>=20.7
+beautifulsoup4>=4.12.2
+httpx>=0.25.2
+flask>=3.0.0
+schedule>=1.2.0
+requests>=2.31.0
 
 # Development dependencies (optional)
-# pylint==3.0.3
-# black==23.12.1
-# mypy==1.8.0
+# pylint>=3.0.3
+# black>=23.12.1
+# mypy>=1.8.0
