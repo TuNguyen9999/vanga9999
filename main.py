@@ -20,7 +20,7 @@ import smtplib
 from bs4 import BeautifulSoup
 from flask import Flask
 from telegram import Update
-from telegram.ext import Application, CommandHandler, MessageHandler, filters
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 
 # ================== CẤU HÌNH ==================
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "7200591128:AAFtBUbfLpp-OoI9II9hQArMTZFwelTT6_Y")
@@ -722,7 +722,7 @@ def send_email(
         return False, error_msg
 
 
-async def news_command_handler(update: Update, context) -> None:
+async def news_command_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """
     Xử lý lệnh /news, tìm nạp, hiển thị và gửi tin tức qua email.
     
@@ -802,7 +802,7 @@ async def news_command_handler(update: Update, context) -> None:
         print(f"Lỗi khi xử lý lệnh /news: {e}")
         await update.message.reply_text("❌ Rất tiếc, đã có lỗi xảy ra trong quá trình tìm nạp tin tức.")
 
-async def help_message_handler(update: Update, context) -> None:
+async def help_message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """
     Gửi tin nhắn hướng dẫn khi người dùng nhắn tin thông thường.
     
@@ -884,7 +884,7 @@ def run_scheduler() -> None:
             print(f"❌ Lỗi trong scheduled job: {e}")
     
     # Lập lịch gửi tin tức vào lúc 10:45 và 20:00 hàng ngày
-    schedule.every().day.at("15:18").do(schedule_job)
+    schedule.every().day.at("13:15").do(schedule_job)
     schedule.every().day.at("20:00").do(schedule_job)
     
     # Lập lịch ping server mỗi 15 phút để giữ nó hoạt động
@@ -937,8 +937,12 @@ def main() -> None:
         return
     
     try:
-        # Khởi tạo Application
-        app_instance = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
+        # Khởi tạo Application với cấu hình đầy đủ
+        app_instance = (
+            Application.builder()
+            .token(TELEGRAM_BOT_TOKEN)
+            .build()
+        )
         
         # Thêm trình xử lý cho lệnh /news
         app_instance.add_handler(CommandHandler("news", news_command_handler))
@@ -967,7 +971,10 @@ def main() -> None:
         
         # Chạy Telegram bot với error handling
         print("🚀 Khởi động Telegram bot...")
-        app_instance.run_polling(allowed_updates=Update.ALL_TYPES)
+        app_instance.run_polling(
+            allowed_updates=Update.ALL_TYPES,
+            drop_pending_updates=True
+        )
         
     except Exception as e:
         print(f"❌ Lỗi khởi động bot: {e}")
