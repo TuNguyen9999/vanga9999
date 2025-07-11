@@ -1,155 +1,71 @@
-# 🤖 Stock News Bot
+# Stock News Bot 🤖
 
 Bot tự động thu thập và gửi tin tức chứng khoán qua Telegram và Email.
 
-## 🚀 Tính năng
+## Tính năng
 
-- ✅ Thu thập tin tức từ Cafef, Vietnambiz, Tin nhanh chứng khoán
-- ✅ Tự động gửi email hàng ngày (13:15 và 20:00)
-- ✅ Bot Telegram với lệnh `/news [dd-mm-yyyy]`
-- ✅ Web server để giữ bot hoạt động
-- ✅ Xử lý lỗi và khởi động lại an toàn
+- 🔍 Tự động crawl tin tức từ các trang tài chính Việt Nam
+- 📧 Gửi email tự động vào 12:00 và 20:00 hàng ngày
+- 💬 Bot Telegram để tra cứu tin tức theo ngày
+- ⏰ Chạy 24/7 trên cloud server
 
-## 📋 Yêu cầu
+## Cấu hình
 
-- Python 3.8+
-- Telegram Bot Token
-- Gmail App Password
+### Biến môi trường cần thiết:
 
-## 🛠️ Cài đặt
-
-1. **Clone repository:**
 ```bash
-git clone <repository-url>
-cd stock-news-bot
-```
-
-2. **Cài đặt dependencies:**
-```bash
-pip install -r requirements.txt
-```
-
-3. **Cấu hình:**
-   - Tạo bot Telegram và lấy token
-   - Tạo Gmail App Password
-   - Cập nhật thông tin trong `main.py`
-
-## 🚀 Khởi động
-
-### Cách 1: Sử dụng script khởi động (Khuyến nghị)
-```bash
-python start_bot.py
-```
-
-### Cách 2: Khởi động trực tiếp
-```bash
-python main.py
-```
-
-## 📱 Sử dụng Bot
-
-### Telegram Commands:
-- `/news` - Lấy tin tức hôm nay
-- `/news 21-04-2025` - Lấy tin tức ngày cụ thể
-
-### Email:
-Bot sẽ tự động gửi email vào:
-- 13:15 hàng ngày
-- 20:00 hàng ngày
-
-## 🔧 Cấu hình
-
-### Environment Variables:
-```bash
-TELEGRAM_BOT_TOKEN=your_bot_token
+TELEGRAM_BOT_TOKEN=your_bot_token_here
 EMAIL_SENDER=your_email@gmail.com
 EMAIL_PASSWORD=your_app_password
-EMAIL_RECIPIENT=recipient@email.com
+EMAIL_RECIPIENT=recipient_email@gmail.com
 VIETCAPITAL_EMAILS=email1@domain.com,email2@domain.com
 ```
 
-### Cấu hình trong code:
-Chỉnh sửa các biến trong `main.py`:
-```python
-TELEGRAM_BOT_TOKEN = "your_bot_token"
-EMAIL_SENDER = "your_email@gmail.com"
-EMAIL_PASSWORD = "your_app_password"
-EMAIL_RECIPIENT = "recipient@email.com"
-```
+## Deploy lên Render
 
-## 🐛 Xử lý lỗi
+1. **Tạo tài khoản Render**: Đăng ký tại [render.com](https://render.com)
 
-### Lỗi "conflict: terminated by other get updates request":
-- Bot đã được cải tiến để xử lý lỗi này
-- Sử dụng `start_bot.py` để khởi động an toàn
-- Bot sẽ tự động dọn dẹp các instance cũ
+2. **Tạo Web Service**:
+   - Connect với GitHub repository
+   - Chọn Python runtime
+   - Build Command: `pip install -r requirements.txt`
+   - Start Command: `python main.py`
 
-### Lỗi kết nối:
-- Kiểm tra internet connection
-- Kiểm tra Telegram Bot Token
-- Kiểm tra Gmail App Password
+3. **Cấu hình Environment Variables**:
+   - Thêm tất cả biến môi trường cần thiết
+   - Đặc biệt là `TELEGRAM_BOT_TOKEN` và email credentials
 
-## 📊 Monitoring
+4. **Deploy**:
+   - Click "Create Web Service"
+   - Render sẽ tự động deploy và chạy bot
 
-### Web Endpoints:
-- `http://localhost:8000/` - Trang chủ
-- `http://localhost:8000/ping` - Health check
-- `http://localhost:8000/health` - Status
+## Lịch trình tự động
 
-### Logs:
-Bot sẽ hiển thị logs chi tiết trong console:
-- ✅ Thành công
-- ❌ Lỗi
-- 🔄 Đang xử lý
-- ⏰ Lập lịch
+- ⏰ **12:00**: Gửi tin tức buổi trưa
+- ⏰ **20:00**: Gửi tin tức buổi tối
+- 🔄 **Ping server**: Mỗi 15 phút để giữ hoạt động
 
-## 🔄 Tự động khởi động lại
+## Sử dụng
 
-Bot có thể được cấu hình để tự động khởi động lại khi gặp lỗi:
+### Telegram Bot Commands:
+- `/news` - Lấy tin tức hôm nay
+- `/news 21-04-2025` - Lấy tin tức theo ngày cụ thể
 
-```bash
-# Sử dụng PM2 (Node.js)
-npm install -g pm2
-pm2 start main.py --name stock-news-bot --interpreter python
+### Email:
+Bot sẽ tự động gửi email HTML đẹp mắt với:
+- 📈 Mã cổ phiếu được đề cập
+- 📄 Tiêu đề bài viết
+- 🔗 Link đọc thêm
 
-# Sử dụng systemd (Linux)
-sudo systemctl enable stock-news-bot
-sudo systemctl start stock-news-bot
-```
+## Các trang web được crawl
 
-## 📝 Changelog
+- cafef.vn
+- vietnambiz.vn  
+- tinnhanhchungkhoan.vn
 
-### v2.0.0
-- ✅ Sửa lỗi "conflict: terminated by other get updates request"
-- ✅ Thêm signal handling
-- ✅ Cải thiện error handling
-- ✅ Thêm script khởi động an toàn
-- ✅ Cập nhật dependencies
+## Hỗ trợ
 
-### v1.0.0
-- ✅ Bot Telegram cơ bản
-- ✅ Thu thập tin tức từ Cafef
-- ✅ Gửi email tự động
-
-## 🤝 Đóng góp
-
-1. Fork repository
-2. Tạo feature branch
-3. Commit changes
-4. Push to branch
-5. Tạo Pull Request
-
-## 📄 License
-
-MIT License - xem file LICENSE để biết thêm chi tiết.
-
-## 📞 Hỗ trợ
-
-Nếu gặp vấn đề, vui lòng:
-1. Kiểm tra logs
-2. Đọc phần Troubleshooting
-3. Tạo issue trên GitHub
-
----
-
-**Lưu ý:** Bot này chỉ dành cho mục đích giáo dục và nghiên cứu. Vui lòng tuân thủ các quy định về sử dụng API và web scraping. 
+Nếu có vấn đề, hãy kiểm tra:
+1. Token Telegram Bot có hợp lệ không
+2. Email credentials có đúng không
+3. Logs trong Render dashboard 
