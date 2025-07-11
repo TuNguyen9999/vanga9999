@@ -877,10 +877,6 @@ async def auto_send_news() -> None:
     """
     Hàm tự động gửi tin tức mà không cần context từ user.
     """
-    if not app_instance:
-        print("❌ Bot chưa được khởi tạo")
-        return
-    
     try:
         print("🤖 Tự động gửi tin tức...")
         
@@ -917,6 +913,8 @@ async def auto_send_news() -> None:
             
     except Exception as e:
         print(f"❌ Lỗi khi tự động gửi tin tức: {e}")
+        import traceback
+        traceback.print_exc()
 
 def ping_server() -> None:
     """
@@ -936,22 +934,26 @@ def run_scheduler() -> None:
     """
     def schedule_job():
         try:
+            print(f"🕐 Thực hiện scheduled job lúc {datetime.now().strftime('%H:%M:%S')}")
             # Tạo event loop mới cho thread này
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             loop.run_until_complete(auto_send_news())
             loop.close()
+            print(f"✅ Hoàn thành scheduled job lúc {datetime.now().strftime('%H:%M:%S')}")
         except Exception as e:
             print(f"❌ Lỗi trong scheduled job: {e}")
+            import traceback
+            traceback.print_exc()
     
-    # Lập lịch gửi tin tức vào lúc 10:45 và 20:00 hàng ngày
-    schedule.every().day.at("16:31").do(schedule_job)
+    # Lập lịch gửi tin tức vào lúc 13:15 và 20:00 hàng ngày
+    schedule.every().day.at("16:37").do(schedule_job)
     schedule.every().day.at("20:00").do(schedule_job)
     
     # Lập lịch ping server mỗi 15 phút để giữ nó hoạt động
     schedule.every(15).minutes.do(ping_server)
     
-    print("⏰ Đã lập lịch tự động gửi tin tức vào lúc 11:03 và 20:00 hàng ngày")
+    print("⏰ Đã lập lịch tự động gửi tin tức vào lúc 13:15 và 20:00 hàng ngày")
     print("🔄 Đã lập lịch ping server mỗi 15 phút để giữ hoạt động")
     
     while True:
@@ -960,6 +962,8 @@ def run_scheduler() -> None:
             time.sleep(60)  # Kiểm tra mỗi phút
         except Exception as e:
             print(f"❌ Lỗi trong scheduler: {e}")
+            import traceback
+            traceback.print_exc()
             time.sleep(60)  # Tiếp tục chạy
 
 def start_scheduler() -> None:
@@ -991,6 +995,8 @@ def main() -> None:
     Hàm chính khởi động bot.
     """
     global app_instance
+    
+    print(f"🚀 Khởi động Stock News Bot lúc {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
     # Dọn dẹp các instance cũ trước khi khởi động
     cleanup_old_instances()
@@ -1033,6 +1039,7 @@ def main() -> None:
         print("🤖 Bot đang chạy... Gửi lệnh /news [dd-mm-yyyy] để bắt đầu.")
         print("⏰ Bot sẽ tự động gửi tin tức vào lúc 13:15 và 20:00 hàng ngày")
         print("🔄 Bot sẽ ping server mỗi 15 phút để giữ hoạt động")
+        print(f"📅 Thời gian hiện tại: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         
         # Chạy Flask app trong thread riêng
         def run_flask() -> None:
@@ -1060,12 +1067,16 @@ def main() -> None:
             cleanup_old_instances()
         except Exception as e:
             print(f"❌ Lỗi trong polling: {e}")
-            print("🔄 Đang thử khởi động lại...")
-            time.sleep(3)
+            import traceback
+            traceback.print_exc()
+            print("🔄 Đang thử khởi động lại sau 5 giây...")
+            time.sleep(5)
             restart_polling()
         
     except Exception as e:
         print(f"❌ Lỗi khởi động bot: {e}")
+        import traceback
+        traceback.print_exc()
         return
 
 if __name__ == '__main__':
