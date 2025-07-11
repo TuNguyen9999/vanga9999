@@ -254,8 +254,13 @@ def check_telegram_connection() -> bool:
         import requests
         response = requests.get(f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/getMe", timeout=10)
         if response.status_code == 200:
-            print("✅ Kết nối Telegram API thành công")
-            return True
+            bot_info = response.json()
+            if bot_info.get('ok'):
+                print(f"✅ Kết nối Telegram API thành công - Bot: @{bot_info['result']['username']}")
+                return True
+            else:
+                print(f"❌ Lỗi Telegram API: {bot_info.get('description', 'Unknown error')}")
+                return False
         else:
             print(f"❌ Lỗi kết nối Telegram API: {response.status_code}")
             return False
@@ -274,8 +279,7 @@ def restart_polling() -> None:
             app_instance.run_polling(
                 allowed_updates=Update.ALL_TYPES,
                 drop_pending_updates=True,
-                close_loop=False,
-                stop_signals=None
+                close_loop=False
             )
         except Exception as e:
             print(f"❌ Lỗi khi khởi động lại polling: {e}")
@@ -947,7 +951,7 @@ def run_scheduler() -> None:
             traceback.print_exc()
     
     # Lập lịch gửi tin tức vào lúc 12:00 và 20:00 hàng ngày
-    schedule.every().day.at("17:31").do(schedule_job)
+    schedule.every().day.at("12:00").do(schedule_job)
     schedule.every().day.at("20:00").do(schedule_job)
     
     # Lập lịch ping server mỗi 15 phút để giữ nó hoạt động
@@ -1023,7 +1027,6 @@ def main() -> None:
             .get_updates_read_timeout(30)
             .get_updates_write_timeout(30)
             .get_updates_connect_timeout(30)
-            .get_updates_pool_timeout(30)
             .build()
         )
         
@@ -1059,8 +1062,7 @@ def main() -> None:
             app_instance.run_polling(
                 allowed_updates=Update.ALL_TYPES,
                 drop_pending_updates=True,
-                close_loop=False,
-                stop_signals=None
+                close_loop=False
             )
         except KeyboardInterrupt:
             print("\n🛑 Bot được tắt bởi người dùng")
