@@ -1,0 +1,94 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "stock-news-bot"
+version = "1.0.0"
+description = "Bot tự động thu thập và gửi tin tức chứng khoán từ các trang web tài chính Việt Nam"
+authors = [
+    {name = "Tu Nguyen", email = "tu.nguyen@vietcapital.com.vn"}
+]
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.11"
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Financial and Insurance Industry",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Office/Business :: Financial :: Investment",
+]
+dependencies = [
+    "python-telegram-bot==20.7",
+    "beautifulsoup4==4.12.2",
+    "httpx==0.25.2",
+    "flask==3.0.0",
+    "schedule==1.2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pylint==3.0.3",
+    "black==23.12.1",
+    "mypy==1.8.0",
+    "pytest==7.4.3",
+    "pytest-asyncio==0.21.1",
+]
+
+[project.urls]
+Homepage = "https://github.com/your-username/stock-news-bot"
+Repository = "https://github.com/your-username/stock-news-bot"
+Issues = "https://github.com/your-username/stock-news-bot/issues"
+
+[tool.black]
+line-length = 88
+target-version = ['py311']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+  # directories
+  \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | build
+  | dist
+)/
+'''
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+[tool.pylint.messages_control]
+disable = [
+    "C0114",  # missing-module-docstring
+    "C0115",  # missing-class-docstring
+    "C0116",  # missing-function-docstring
+]
+
+[tool.pylint.format]
+max-line-length = 88
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = "-v --tb=short"
