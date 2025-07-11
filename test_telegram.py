@@ -41,14 +41,7 @@ async def test_application():
     print("\n🔧 Đang test tạo Application...")
     
     try:
-        app = (
-            Application.builder()
-            .token(TELEGRAM_BOT_TOKEN)
-            .get_updates_read_timeout(30)
-            .get_updates_write_timeout(30)
-            .get_updates_connect_timeout(30)
-            .build()
-        )
+        app = Application.builder().token(TELEGRAM_BOT_TOKEN).build()
         
         # Thêm handlers
         app.add_handler(CommandHandler("news", news_command_handler))
