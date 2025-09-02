@@ -2,30 +2,30 @@
 
 ## 🎯 Tổng quan dự án
 
-**Backtest_BrealVol** là sự kết hợp phân tích cơ bản (Fundamental Analysis - FA) và phân tích kỹ thuật (Technical Analysis - TA) để tạo ra các tín hiệu mua/bán tự động.
+**Backtest_BreakVol** là sự kết hợp phân tích cơ bản (Fundamental Analysis - FA) và phân tích kỹ thuật (Technical Analysis - TA) để tạo ra các tín hiệu mua/bán tự động.
 
 ## 🚀 Các bước thực hiện chính
 
-### 1. **Đọc và Xử lý Dữ liệu** (`load_and_process_data()`)
+### 1. **Đọc và xử lý dữ liệu** (`load_and_process_data()`)
 - **Đọc dữ liệu HSX**: Giá, khối lượng giao dịch, khối lượng lưu hành từ các file CSV
 - **Đọc dữ liệu bổ sung**: Thông tin từ FiinTrade (PE, vốn hóa, dòng tiền nước ngoài)
 - **Chuẩn hóa dữ liệu**: Xử lý tên cột, định dạng ngày tháng
 - **Gộp dữ liệu**: Kết hợp tất cả nguồn dữ liệu thành một DataFrame duy nhất
 - **Xử lý hệ số điều chỉnh**: Tính toán giá điều chỉnh theo adratio cho các sự kiện cổ tức, chia tách
 
-### 2. **Đọc Dữ liệu Doanh nghiệp** (`load_earnings_data()`)
+### 2. **Đọc dữ liệu doanh nghiệp** (`load_earnings_data()`)
 - **Đọc báo cáo tài chính**: Dữ liệu tăng trưởng lợi nhuận theo quý
 - **Xử lý tăng trưởng**: Tính toán tăng trưởng YoY cho từng quý
 - **Lọc doanh nghiệp tăng trưởng**: Áp dụng tiêu chí sàn lọc cơ bản
 
-### 3. **Tính toán Chỉ số Kỹ thuật** (`calculate_technical_indicators()`)
+### 3. **Tính toán chỉ số kỹ thuật** (`calculate_technical_indicators()`)
 - **Chỉ số cơ bản**: Volume SMA, GTGD trung bình, biến động giá
 - **RSI**: Chỉ số sức mạnh tương đối (14 ngày)
 - **MACD**: Chỉ báo hội tụ/phân kỳ trung bình động
 - **Bollinger Bands**: Dải Bollinger (20 ngày, 2 độ lệch chuẩn)
 - **Moving Averages**: MA5, MA9, MA20, MA200, SMA50
 
-### 4. **Tạo Tín hiệu Mua/Bán** (`generate_signals()`)
+### 4. **Tạo tín hiệu Mua/Bán** (`generate_signals()`)
 - **Lọc cơ bản**: PE < 50, vốn hóa > 1000 tỷ, GTGD > 20 tỷ
 - **Nhóm 1 - Thu hút dòng tiền**:
   - MACD > Signal (tối thiểu 0.18)
