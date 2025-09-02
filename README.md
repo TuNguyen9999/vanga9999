@@ -1,8 +1,8 @@
-# 📊 Backtest_BrealVol - Hệ thống Backtest Chiến lược Đầu tư Định lượng
+# 📊 Backtest chiến lược Quant
 
 ## 🎯 Tổng quan dự án
 
-**Backtest_BrealVol** là một hệ thống backtest chiến lược đầu tư định lượng (Quantitative Investment Strategy) được thiết kế để tối ưu hóa việc đầu tư cổ phiếu trên thị trường Việt Nam. Hệ thống kết hợp phân tích cơ bản (Fundamental Analysis - FA) và phân tích kỹ thuật (Technical Analysis - TA) để tạo ra các tín hiệu mua/bán tự động.
+**Backtest_BrealVol** là sự kết hợp phân tích cơ bản (Fundamental Analysis - FA) và phân tích kỹ thuật (Technical Analysis - TA) để tạo ra các tín hiệu mua/bán tự động.
 
 ## 🚀 Các bước thực hiện chính
 
